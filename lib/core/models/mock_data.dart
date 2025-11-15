@@ -22,6 +22,29 @@ class Project {
   final DateTime dueDate;
   final double estimatedHours;
   final List<String> tags;
+
+  Project copyWith({
+    String? title,
+    String? priority,
+    double? progress,
+    int? index,
+    String? status,
+    DateTime? dueDate,
+    double? estimatedHours,
+    List<String>? tags,
+  }) {
+    return Project(
+      id: id,
+      title: title ?? this.title,
+      priority: priority ?? this.priority,
+      progress: progress ?? this.progress,
+      index: index ?? this.index,
+      status: status ?? this.status,
+      dueDate: dueDate ?? this.dueDate,
+      estimatedHours: estimatedHours ?? this.estimatedHours,
+      tags: tags ?? this.tags,
+    );
+  }
 }
 
 class Task {
@@ -44,6 +67,27 @@ class Task {
   final double hours;
   final String description;
   final String category;
+
+  Task copyWith({
+    String? title,
+    String? priority,
+    String? status,
+    DateTime? dueDate,
+    double? hours,
+    String? description,
+    String? category,
+  }) {
+    return Task(
+      id: id,
+      title: title ?? this.title,
+      priority: priority ?? this.priority,
+      status: status ?? this.status,
+      dueDate: dueDate ?? this.dueDate,
+      hours: hours ?? this.hours,
+      description: description ?? this.description,
+      category: category ?? this.category,
+    );
+  }
 }
 
 class CatalogItem {

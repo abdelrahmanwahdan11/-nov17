@@ -2,7 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../core/localization/app_localizations.dart';
 import '../../core/models/mock_data.dart';
+import '../../shared/controllers/tasks_controller.dart';
+import '../../shared/controllers/workspace_scope.dart';
 import '../../shared/widgets/ai_info_button.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
@@ -15,95 +18,184 @@ class TaskDetailsScreen extends StatefulWidget {
 }
 
 class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
-  bool _done = false;
   bool _flipped = false;
 
-  void _toggleOverlay() {
-    showGeneralDialog<void>(
+  Task _resolveTask(TasksController controller, WorkspaceScope scope) {
+    final initial = widget.task;
+    if (initial != null) {
+      return controller.findById(initial.id) ?? initial;
+    }
+    if (controller.tasks.isNotEmpty) {
+      return controller.tasks.first;
+    }
+    final today = scope.repository.tasksForDate(DateTime.now());
+    if (today.isNotEmpty) {
+      return today.first;
+    }
+    final all = scope.repository.allTasks();
+    return all.isNotEmpty
+        ? all.first
+        : Task(
+            id: 'fallback-task',
+            title: 'Task',
+            priority: 'Medium',
+            status: 'Upcoming',
+            dueDate: DateTime.now(),
+            hours: 1,
+            description: '',
+            category: 'General',
+          );
+  }
+
+  String _localizedStatus(AppLocalizations loc, String status) {
+    switch (status.toLowerCase()) {
+      case 'in progress':
+        return loc.translate('status_in_progress');
+      case 'upcoming':
+        return loc.translate('status_upcoming');
+      case 'done':
+        return loc.translate('status_done');
+      default:
+        return status;
+    }
+  }
+
+  String _localizedPriority(AppLocalizations loc, String priority) {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return loc.translate('priority_high');
+      case 'medium':
+        return loc.translate('priority_medium');
+      case 'low':
+        return loc.translate('priority_low');
+      default:
+        return priority;
+    }
+  }
+
+  Future<void> _toggleOverlay(Task task, AppLocalizations loc) async {
+    await showGeneralDialog<void>(
       context: context,
-      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
       barrierDismissible: true,
       transitionDuration: const Duration(milliseconds: 300),
       barrierLabel: 'overlay',
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         return ScaleTransition(
           scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
           child: _FlipCard(
             flipped: _flipped,
             onFlip: () => setState(() => _flipped = !_flipped),
+            front: loc.translate('task_overlay_front'),
+            back: task.description,
           ),
         );
       },
     );
   }
 
+  Future<void> _toggleCompletion(TasksController controller, Task task, AppLocalizations loc) async {
+    await controller.toggleCompletion(task);
+    if (!mounted) return;
+    final updated = controller.findById(task.id) ?? task;
+    final isDone = updated.status.toLowerCase() == 'done';
+    final message = isDone ? loc.translate('task_details_marked_done') : loc.translate('task_details_marked_active');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final task = widget.task ?? tasksMock.first;
-    return Scaffold(
-      appBar: AppBar(title: Text(task.title)),
-      floatingActionButton: const AiInfoButton(),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    final scope = WorkspaceScope.of(context);
+    final controller = scope.tasks;
+
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final task = _resolveTask(controller, scope);
+        final loc = AppLocalizations.of(context);
+        final materialLoc = MaterialLocalizations.of(context);
+        final isDone = task.status.toLowerCase() == 'done';
+        final dueDate = materialLoc.formatFullDate(task.dueDate);
+
+        return Scaffold(
+          appBar: AppBar(title: Text(task.title)),
+          floatingActionButton: const AiInfoButton(),
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Chip(label: Text(task.status)),
-                const SizedBox(width: 8),
-                Chip(label: Text(task.priority)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('Due: ${task.dueDate.toLocal()}'),
-            const SizedBox(height: 24),
-            Expanded(
-              child: ListView(
-                children: [
-                  Text('Description', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 12),
-                  const Text('Detailed overview of the task goes here, describing the goals and deliverables.'),
-                  const SizedBox(height: 24),
-                  GestureDetector(
-                    onTap: _toggleOverlay,
-                    child: Hero(
-                      tag: 'task_image_${task.title}',
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(32),
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&fit=crop&w=900&q=80',
-                          height: 220,
-                          fit: BoxFit.cover,
+                Wrap(
+                  spacing: 12,
+                  children: [
+                    Chip(label: Text(_localizedStatus(loc, task.status))),
+                    Chip(label: Text(_localizedPriority(loc, task.priority))),
+                    Chip(label: Text(task.category)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(loc.translate('task_details_schedule')),
+                  subtitle: Text(loc.translate('task_due_date', params: {'date': dueDate})),
+                  trailing: Text('${task.hours.toStringAsFixed(1)}h'),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      Text(loc.translate('task_details_description'), style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 12),
+                      Text(task.description),
+                      const SizedBox(height: 24),
+                      Text(loc.translate('task_details_hours'), style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 12),
+                      Text('${task.hours.toStringAsFixed(1)}h'),
+                      const SizedBox(height: 24),
+                      GestureDetector(
+                        onTap: () => _toggleOverlay(task, loc),
+                        child: Hero(
+                          tag: 'task_image_${task.id}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(32),
+                            child: Image.network(
+                              'https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&fit=crop&w=900&q=80',
+                              height: 220,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () => _toggleCompletion(controller, task, loc),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    child: Text(
+                      isDone ? loc.translate('task_details_mark_active') : loc.translate('task_details_mark_done'),
+                      key: ValueKey(isDone),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () {
-                setState(() => _done = !_done);
-              },
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: Text(_done ? 'Marked as done' : 'Mark as done'),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
 
 class _FlipCard extends StatelessWidget {
-  const _FlipCard({required this.flipped, required this.onFlip});
+  const _FlipCard({required this.flipped, required this.onFlip, required this.front, required this.back});
 
   final bool flipped;
   final VoidCallback onFlip;
+  final String front;
+  final String back;
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +230,7 @@ class _FlipCard extends StatelessWidget {
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(32),
                   ),
-                  child: const Text('More details and attachments will be shown here.'),
+                  child: Text(back),
                 )
               : Container(
                   key: const ValueKey('front'),
@@ -147,7 +239,7 @@ class _FlipCard extends StatelessWidget {
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(32),
                   ),
-                  child: const Text('Preview of the task asset. Tap to flip.'),
+                  child: Text(front),
                 ),
         ),
       ),

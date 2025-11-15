@@ -15,6 +15,7 @@ class ProjectsController extends ChangeNotifier {
   final CompareController _compare;
 
   final List<Project> _projects = [];
+  final Map<String, (double progress, String status)> _previousState = {};
   int _page = 1;
   final int _pageSize = 4;
   String _priority = 'All';
@@ -81,6 +82,45 @@ class ProjectsController extends ChangeNotifier {
   }
 
   bool isCompared(Project project) => _compare.contains(project.id);
+
+  Project? findById(String id) {
+    try {
+      return _projects.firstWhere((project) => project.id == id);
+    } catch (_) {
+      return _repository.findProject(id);
+    }
+  }
+
+  Future<void> updateProject(Project project) async {
+    final saved = await _repository.saveProject(project);
+    if (saved != null) {
+      _replaceProject(saved);
+      _compare.updateProject(saved);
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleCompletion(Project project) async {
+    final isCompleted = project.status.toLowerCase() == 'completed' || project.progress >= 0.999;
+    if (!isCompleted) {
+      _previousState[project.id] = (project.progress, project.status);
+      await updateProject(project.copyWith(progress: 1.0, status: 'Completed'));
+    } else {
+      final previous = _previousState[project.id];
+      final restored = project.copyWith(
+        progress: previous?.$1 ?? 0.62,
+        status: previous?.$2 ?? 'In Progress',
+      );
+      await updateProject(restored);
+    }
+  }
+
+  void _replaceProject(Project project) {
+    final index = _projects.indexWhere((item) => item.id == project.id);
+    if (index != -1) {
+      _projects[index] = project;
+    }
+  }
 
   void _onCompareChanged() {
     notifyListeners();

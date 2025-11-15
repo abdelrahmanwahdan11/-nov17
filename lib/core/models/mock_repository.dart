@@ -120,4 +120,48 @@ class MockRepository {
   List<Task> tasksForDate(DateTime date) {
     return _tasks.where((task) => task.dueDate.year == date.year && task.dueDate.month == date.month && task.dueDate.day == date.day).toList();
   }
+
+  Map<int, int> taskCountForMonth(DateTime month) {
+    final counts = <int, int>{};
+    for (final task in _tasks) {
+      if (task.dueDate.year == month.year && task.dueDate.month == month.month) {
+        counts.update(task.dueDate.day, (value) => value + 1, ifAbsent: () => 1);
+      }
+    }
+    return counts;
+  }
+
+  Task? findTask(String id) {
+    try {
+      return _tasks.firstWhere((task) => task.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Project? findProject(String id) {
+    try {
+      return _projects.firstWhere((project) => project.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Task?> saveTask(Task updated) async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    final index = _tasks.indexWhere((task) => task.id == updated.id);
+    if (index == -1) return null;
+    _tasks[index] = updated;
+    return updated;
+  }
+
+  Future<Project?> saveProject(Project updated) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    final index = _projects.indexWhere((project) => project.id == updated.id);
+    if (index == -1) return null;
+    _projects[index] = updated;
+    return updated;
+  }
+
+  List<Task> allTasks() => List.unmodifiable(_tasks);
 }

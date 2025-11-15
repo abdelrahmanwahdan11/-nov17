@@ -92,6 +92,9 @@ class TasksController extends ChangeNotifier {
   void selectView(TaskView view) {
     if (_view == view) return;
     _view = view;
+    if (view == TaskView.calendar) {
+      _calendarTasks = _repository.tasksForDate(_selectedDate);
+    }
     notifyListeners();
   }
 
@@ -108,6 +111,50 @@ class TasksController extends ChangeNotifier {
   }
 
   bool isCompared(Task task) => _compare.contains(task.id);
+
+  Task? findById(String id) {
+    final inPage = _paginated.where((task) => task.id == id);
+    if (inPage.isNotEmpty) return inPage.first;
+    final inCalendar = _calendarTasks.where((task) => task.id == id);
+    if (inCalendar.isNotEmpty) return inCalendar.first;
+    return _repository.findTask(id);
+  }
+
+  List<Task> tasksForDate(DateTime date) {
+    final tasks = _repository.tasksForDate(date);
+    tasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    return tasks;
+  }
+
+  Map<int, int> taskCountForMonth(DateTime month) => _repository.taskCountForMonth(month);
+
+  Future<void> updateTaskStatus(Task task, String status) async {
+    final updated = task.copyWith(status: status);
+    final saved = await _repository.saveTask(updated);
+    if (saved != null) {
+      _replaceTask(saved);
+      _compare.updateTask(saved);
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleCompletion(Task task) {
+    final isDone = task.status.toLowerCase() == 'done';
+    return updateTaskStatus(task, isDone ? 'In Progress' : 'Done');
+  }
+
+  void _replaceTask(Task updated) {
+    final index = _paginated.indexWhere((task) => task.id == updated.id);
+    if (index != -1) {
+      _paginated[index] = updated;
+    }
+    final calendarIndex = _calendarTasks.indexWhere((task) => task.id == updated.id);
+    if (calendarIndex != -1) {
+      _calendarTasks[calendarIndex] = updated;
+    } else {
+      _calendarTasks = _repository.tasksForDate(_selectedDate);
+    }
+  }
 
   void _onCompareChanged() {
     notifyListeners();

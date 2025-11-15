@@ -15,23 +15,29 @@ class ProjectDetailsScreen extends StatefulWidget {
 }
 
 class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
-  bool _completed = false;
+  late final Project _initialProject = widget.project;
 
   @override
   Widget build(BuildContext context) {
-    final project = widget.project;
     final loc = AppLocalizations.of(context);
     final scope = WorkspaceScope.of(context);
+    final controller = scope.projects;
+    final tasksController = scope.tasks;
     final compare = scope.compare;
-    final relatedTasks = scope.tasks.tasks
-        .where((task) => task.priority == project.priority)
-        .take(4)
-        .toList();
+    final materialLoc = MaterialLocalizations.of(context);
 
     return AnimatedBuilder(
-      animation: compare,
+      animation: Listenable.merge([controller, compare, tasksController]),
       builder: (context, _) {
+        final project = controller.findById(_initialProject.id) ?? _initialProject;
         final selected = compare.contains(project.id);
+        final isCompleted = project.status.toLowerCase() == 'completed' || project.progress >= 0.999;
+        final relatedTasks = scope.repository
+            .allTasks()
+            .where((task) => task.priority == project.priority)
+            .take(4)
+            .toList();
+
         return Scaffold(
           appBar: AppBar(title: Text(project.title)),
           floatingActionButton: const AiInfoButton(),
@@ -41,6 +47,7 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -51,39 +58,57 @@ class _ProjectDetailsScreenState extends State<ProjectDetailsScreen> {
                       child: Text(loc.translate('priority_${project.priority.toLowerCase()}')),
                     ),
                     const SizedBox(width: 12),
-                    Text(loc.translate('project_progress', params: {'percent': (project.progress * 100).round().toString()})),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(loc.translate('project_progress', params: {'percent': (project.progress * 100).round().toString()})),
+                        const SizedBox(height: 4),
+                        Text(materialLoc.formatFullDate(project.dueDate), style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
-                LinearProgressIndicator(value: _completed ? 1 : project.progress),
+                LinearProgressIndicator(value: project.progress.clamp(0.0, 1.0)),
                 const SizedBox(height: 24),
                 Text(loc.translate('project_linked_tasks'), style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: relatedTasks.isEmpty
-                      ? Center(child: Text(loc.translate('project_no_tasks')))
-                      : ListView.separated(
-                          itemCount: relatedTasks.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final task = relatedTasks[index];
-                            return ListTile(
-                              tileColor: Theme.of(context).colorScheme.surface,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              title: Text(task.title),
-                              subtitle: Text(task.status),
-                              trailing: Text('${task.hours.toStringAsFixed(1)}h'),
-                            );
-                          },
-                        ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: relatedTasks.isEmpty
+                        ? Center(child: Text(loc.translate('project_no_tasks')))
+                        : ListView.separated(
+                            itemCount: relatedTasks.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final task = relatedTasks[index];
+                              return ListTile(
+                                tileColor: Theme.of(context).colorScheme.surface,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                title: Text(task.title),
+                                subtitle: Text(task.status),
+                                trailing: Text('${task.hours.toStringAsFixed(1)}h'),
+                              );
+                            },
+                          ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: FilledButton(
-                        onPressed: () => setState(() => _completed = !_completed),
-                        child: Text(_completed ? loc.translate('mark_active') : loc.translate('mark_completed')),
+                        onPressed: () async {
+                          await controller.toggleCompletion(project);
+                          if (!mounted) return;
+                          final message = isCompleted
+                              ? loc.translate('mark_active')
+                              : loc.translate('mark_completed');
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text(message)));
+                        },
+                        child: Text(isCompleted ? loc.translate('mark_active') : loc.translate('mark_completed')),
                       ),
                     ),
                     const SizedBox(width: 12),

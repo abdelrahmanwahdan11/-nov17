@@ -91,6 +91,20 @@ class CompareController extends ChangeNotifier {
     }
   }
 
+  void updateProject(Project project) {
+    if (_items.containsKey(project.id)) {
+      _items[project.id] = ComparableItem.fromProject(project);
+      notifyListeners();
+    }
+  }
+
+  void updateTask(Task task) {
+    if (_items.containsKey(task.id)) {
+      _items[task.id] = ComparableItem.fromTask(task);
+      notifyListeners();
+    }
+  }
+
   void _toggle(ComparableItem item) {
     if (_items.containsKey(item.id)) {
       _items.remove(item.id);
