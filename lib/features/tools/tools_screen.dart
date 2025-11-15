@@ -22,6 +22,7 @@ class ToolsScreen extends StatelessWidget {
       scope.insights,
       scope.goals,
       scope.clients,
+      scope.team,
     ]);
     final loc = AppLocalizations.of(context);
 
@@ -88,6 +89,23 @@ class ToolsScreen extends StatelessWidget {
                 'tools_clients_subtitle',
                 params: {'count': scope.clients.activeClients.toString()},
               );
+              final teamMetrics = scope.team.metrics;
+              final latestTeamCheckIn = teamMetrics.latestCheckIn;
+              final teamSubtitle = latestTeamCheckIn == null
+                  ? loc.translate(
+                      'tools_team_subtitle',
+                      params: {
+                        'active': teamMetrics.active.toString(),
+                        'favorites': teamMetrics.favoriteCount.toString(),
+                      },
+                    )
+                  : loc.translate(
+                      'tools_team_activity',
+                      params: {
+                        'name': latestTeamCheckIn.memberName,
+                        'time': _formatRelativeCheckIn(latestTeamCheckIn.createdAt, loc, materialLoc),
+                      },
+                    );
 
               final cards = [
                 _ToolCardData(
@@ -109,6 +127,13 @@ class ToolsScreen extends StatelessWidget {
                   subtitle: clientsSubtitle,
                   route: AppRoutes.clients,
                   highlight: scope.clients.starredClients > 0,
+                ),
+                _ToolCardData(
+                  icon: IconlyBold.user_3,
+                  title: loc.translate('tools_team'),
+                  subtitle: teamSubtitle,
+                  route: AppRoutes.team,
+                  highlight: teamMetrics.favoriteCount > 0,
                 ),
                 _ToolCardData(
                   icon: IconlyBold.activity,
@@ -223,6 +248,33 @@ class ToolsScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _formatRelativeCheckIn(
+    DateTime timestamp,
+    AppLocalizations loc,
+    MaterialLocalizations materialLoc,
+  ) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    if (difference.inMinutes < 1) {
+      return loc.translate('team_last_active_now');
+    }
+    if (difference.inMinutes < 60) {
+      return loc.translate('team_last_active_minutes', params: {'minutes': difference.inMinutes.toString()});
+    }
+    if (difference.inHours < 24) {
+      return loc.translate('team_last_active_hours', params: {'hours': difference.inHours.toString()});
+    }
+    if (difference.inDays == 1) {
+      return loc.translate('team_last_active_yesterday', params: {
+        'time': materialLoc.formatTimeOfDay(TimeOfDay.fromDateTime(timestamp)),
+      });
+    }
+    if (difference.inDays < 7) {
+      return loc.translate('team_last_active_days', params: {'days': difference.inDays.toString()});
+    }
+    return loc.translate('team_last_active_date', params: {'date': materialLoc.formatMediumDate(timestamp)});
   }
 
   String _formatDuration(Duration duration, MaterialLocalizations materialLoc) {

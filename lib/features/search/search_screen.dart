@@ -26,6 +26,7 @@ class _SearchScreenState extends State<SearchScreen> {
     'templates': [],
     'catalog': [],
     'clients': [],
+    'team': [],
   };
   bool _isSearching = false;
 
@@ -50,6 +51,7 @@ class _SearchScreenState extends State<SearchScreen> {
           'templates': [],
           'catalog': [],
           'clients': [],
+          'team': [],
         };
       });
       return;
@@ -205,13 +207,20 @@ class _SearchScreenState extends State<SearchScreen> {
                     clients: List<Client>.from(_results['clients'] ?? const []),
                     onTap: (client) {
                       _persistCurrentQuery();
-                      Navigator.pushNamed(context, AppRoutes.clients);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
+              Navigator.pushNamed(context, AppRoutes.clients);
+            },
+          ),
+          _TeamSearchSection(
+            members: List<TeamMember>.from(_results['team'] ?? const []),
+            onTap: (member) {
+              _persistCurrentQuery();
+              Navigator.pushNamed(context, AppRoutes.teamMemberDetails, arguments: member);
+            },
+          ),
+        ],
+      ),
+    ),
+  ],
         ),
       ),
     );
@@ -308,6 +317,37 @@ class _ClientSearchSection extends StatelessWidget {
             ),
             trailing: Text('\$${client.value.toStringAsFixed(0)}'),
             onTap: () => onTap(client),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+class _TeamSearchSection extends StatelessWidget {
+  const _TeamSearchSection({required this.members, required this.onTap});
+
+  final List<TeamMember> members;
+  final ValueChanged<TeamMember> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (members.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final loc = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(loc.translate('search_results_team'), style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        ...members.map(
+          (member) => ListTile(
+            leading: CircleAvatar(backgroundImage: NetworkImage(member.avatarUrl)),
+            title: Text(member.name),
+            subtitle: Text('${member.role} · ${loc.translate('team_status_${member.status.toLowerCase().replaceAll(' ', '_')}')}'),
+            onTap: () => onTap(member),
           ),
         ),
         const SizedBox(height: 16),

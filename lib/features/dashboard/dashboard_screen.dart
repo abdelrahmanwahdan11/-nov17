@@ -20,6 +20,7 @@ class DashboardScreen extends StatelessWidget {
       scope.catalog.refresh(),
       scope.goals.refresh(),
       scope.clients.refresh(),
+      scope.team.refresh(),
     ]);
   }
 
@@ -32,7 +33,7 @@ class DashboardScreen extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () => _refresh(context),
       child: AnimatedBuilder(
-        animation: Listenable.merge([scope.projects, scope.tasks, scope.catalog, scope.goals, scope.clients]),
+        animation: Listenable.merge([scope.projects, scope.tasks, scope.catalog, scope.goals, scope.clients, scope.team]),
         builder: (context, _) {
           final projects = scope.projects;
           final tasks = scope.tasks;
@@ -99,6 +100,8 @@ class DashboardScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 24),
+                      const _TeamPulseCard(),
+                      const SizedBox(height: 24),
                       const _ClientPipelineCard(),
                       const SizedBox(height: 24),
                       _PaymentSummaryCard(),
@@ -133,6 +136,33 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+
+  String _formatRelativeTime(
+    AppLocalizations loc,
+    MaterialLocalizations material,
+    DateTime timestamp,
+  ) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    if (difference.inMinutes < 1) {
+      return loc.translate('team_last_active_now');
+    }
+    if (difference.inMinutes < 60) {
+      return loc.translate('team_last_active_minutes', params: {'minutes': difference.inMinutes.toString()});
+    }
+    if (difference.inHours < 24) {
+      return loc.translate('team_last_active_hours', params: {'hours': difference.inHours.toString()});
+    }
+    if (difference.inDays == 1) {
+      return loc.translate('team_last_active_yesterday', params: {
+        'time': material.formatTimeOfDay(TimeOfDay.fromDateTime(timestamp)),
+      });
+    }
+    if (difference.inDays < 7) {
+      return loc.translate('team_last_active_days', params: {'days': difference.inDays.toString()});
+    }
+    return loc.translate('team_last_active_date', params: {'date': material.formatMediumDate(timestamp)});
+  }
 }
 
 class _DashboardSkeleton extends StatelessWidget {
@@ -148,6 +178,159 @@ class _DashboardSkeleton extends StatelessWidget {
         SizedBox(height: 16),
         SkeletonContainer(height: 200),
       ],
+    );
+  }
+}
+
+class _TeamPulseCard extends StatelessWidget {
+  const _TeamPulseCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = WorkspaceScope.of(context);
+    final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return AnimatedBuilder(
+      animation: scope.team,
+      builder: (context, _) {
+        final metrics = scope.team.metrics;
+        final highlight = metrics.highlight;
+        final latestCheckIn = metrics.latestCheckIn;
+        final capacityPercent = (metrics.averageCapacity * 100).clamp(0, 100).toStringAsFixed(0);
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(loc.translate('dashboard_team_pulse_title'), style: theme.textTheme.titleLarge),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.team),
+                    child: Text(loc.translate('dashboard_team_view_all')),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                loc.translate('team_summary_overview', params: {
+                  'active': metrics.active.toString(),
+                  'total': metrics.total.toString(),
+                }),
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _InsightPill(
+                    icon: Icons.groups_rounded,
+                    label: loc.translate('dashboard_team_pulse_active', params: {
+                      'count': metrics.active.toString(),
+                    }),
+                    color: theme.colorScheme.primary.withOpacity(0.15),
+                  ),
+                  _InsightPill(
+                    icon: Icons.timelapse_rounded,
+                    label: loc.translate('dashboard_team_pulse_focus', params: {
+                      'hours': metrics.averageFocus.toStringAsFixed(1),
+                    }),
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                  ),
+                  _InsightPill(
+                    icon: Icons.star_rounded,
+                    label: loc.translate('team_summary_favorites', params: {
+                      'count': metrics.favoriteCount.toString(),
+                    }),
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: LinearProgressIndicator(
+                  value: metrics.averageCapacity.clamp(0.0, 1.0),
+                  minHeight: 10,
+                  backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                loc.translate('team_capacity_average', params: {'percent': capacityPercent}),
+                style: theme.textTheme.labelSmall,
+              ),
+              if (latestCheckIn != null) ...[
+                const SizedBox(height: 16),
+                _TeamCheckInCallout(
+                  name: latestCheckIn.memberName,
+                  summary: latestCheckIn.summary,
+                  timeLabel: _formatRelativeTime(
+                    loc,
+                    MaterialLocalizations.of(context),
+                    latestCheckIn.createdAt,
+                  ),
+                  onTap: () {
+                    final member = scope.team.memberById(latestCheckIn.memberId);
+                    if (member != null) {
+                      Navigator.pushNamed(context, AppRoutes.teamMemberDetails, arguments: member);
+                    }
+                  },
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (highlight != null)
+                Row(
+                  children: [
+                    CircleAvatar(backgroundImage: NetworkImage(highlight.avatarUrl)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            highlight.name,
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(highlight.role, style: theme.textTheme.labelSmall),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      loc.translate('team_focus_hours', params: {
+                        'hours': highlight.focusHoursThisWeek.toStringAsFixed(1),
+                      }),
+                      style: theme.textTheme.labelSmall,
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  loc.translate('team_highlight_placeholder'),
+                  style: theme.textTheme.bodySmall,
+                ),
+              if (highlight != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  loc.translate('dashboard_team_pulse_highlight', params: {
+                    'name': highlight.name,
+                  }),
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -267,6 +450,54 @@ class _ClientPipelineCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _TeamCheckInCallout extends StatelessWidget {
+  const _TeamCheckInCallout({
+    required this.name,
+    required this.summary,
+    required this.timeLabel,
+    required this.onTap,
+  });
+
+  final String name;
+  final String summary;
+  final String timeLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            loc.translate('dashboard_team_recent_check_in', params: {'name': name}),
+            style: theme.textTheme.labelLarge,
+          ),
+          const SizedBox(height: 6),
+          Text(summary, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 6),
+          Text(
+            loc.translate('dashboard_team_recent_check_in_time', params: {'time': timeLabel}),
+            style: theme.textTheme.labelSmall,
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: onTap,
+            child: Text(loc.translate('team_recent_check_in_cta')),
+          ),
+        ],
+      ),
     );
   }
 }

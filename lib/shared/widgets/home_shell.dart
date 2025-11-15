@@ -12,6 +12,7 @@ import '../../features/catalog/catalog_screen.dart';
 import '../../features/compare/compare_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/clients/clients_screen.dart';
+import '../../features/team/team_screen.dart';
 import '../../features/tools/tools_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
@@ -29,6 +30,7 @@ import '../controllers/library_controller.dart';
 import '../controllers/finance_controller.dart';
 import '../controllers/insights_controller.dart';
 import '../controllers/goals_controller.dart';
+import '../controllers/team_controller.dart';
 import 'app_drawer.dart';
 
 class HomeShell extends StatefulWidget {
@@ -54,6 +56,7 @@ class _HomeShellState extends State<HomeShell> {
   late final FinanceController _financeController;
   late final InsightsController _insightsController;
   late final GoalsController _goalsController;
+  late final TeamController _teamController;
   int _index = 0;
   bool _drawerOpen = false;
 
@@ -85,6 +88,7 @@ class _HomeShellState extends State<HomeShell> {
       tasks: _tasksController,
       finance: _financeController,
     );
+    _teamController = TeamController(repository: _repository);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _projectsController.bootstrap();
       _tasksController.bootstrap();
@@ -96,6 +100,7 @@ class _HomeShellState extends State<HomeShell> {
       _libraryController.bootstrap();
       _financeController.bootstrap();
       _goalsController.bootstrap();
+      _teamController.bootstrap();
     });
   }
 
@@ -122,6 +127,7 @@ class _HomeShellState extends State<HomeShell> {
     _financeController.dispose();
     _insightsController.dispose();
     _goalsController.dispose();
+    _teamController.dispose();
     _compareController.dispose();
     super.dispose();
   }
@@ -134,7 +140,7 @@ class _HomeShellState extends State<HomeShell> {
 
   void _openNotifications() {
     setState(() {
-      _index = 10;
+      _index = 11;
       _drawerOpen = false;
     });
   }
@@ -154,16 +160,18 @@ class _HomeShellState extends State<HomeShell> {
       case 5:
         return const ClientsScreen();
       case 6:
-        return const ToolsScreen();
+        return const TeamScreen();
       case 7:
-        return const CatalogScreen();
+        return const ToolsScreen();
       case 8:
-        return const CompareScreen();
+        return const CatalogScreen();
       case 9:
-        return const SearchScreen();
+        return const CompareScreen();
       case 10:
-        return const NotificationsScreen();
+        return const SearchScreen();
       case 11:
+        return const NotificationsScreen();
+      case 12:
         return SettingsScreen(controller: widget.controller);
     }
     return const SizedBox.shrink();
@@ -183,6 +191,7 @@ class _HomeShellState extends State<HomeShell> {
       loc.translate('calendar'),
       loc.translate('finance'),
       loc.translate('clients'),
+      loc.translate('team'),
       loc.translate('tools'),
       loc.translate('catalog'),
       loc.translate('compare'),
@@ -206,6 +215,7 @@ class _HomeShellState extends State<HomeShell> {
       finance: _financeController,
       insights: _insightsController,
       goals: _goalsController,
+      team: _teamController,
       child: Directionality(
         textDirection: widget.controller.locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         child: Scaffold(

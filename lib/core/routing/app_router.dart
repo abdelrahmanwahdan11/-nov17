@@ -25,6 +25,8 @@ import '../../features/tools/scheduler_screen.dart';
 import '../../features/tools/templates_screen.dart';
 import '../../features/tools/tools_screen.dart';
 import '../../features/insights/insights_screen.dart';
+import '../../features/team/team_screen.dart';
+import '../../features/team/team_member_details_screen.dart';
 import '../models/mock_data.dart';
 import 'app_routes.dart';
 
@@ -62,6 +64,10 @@ class AppRouter {
         return _material(settings, const FinanceOverviewScreen());
       case AppRoutes.clients:
         return _material(settings, const ClientsScreen());
+      case AppRoutes.team:
+        return _material(settings, const TeamScreen());
+      case AppRoutes.teamMemberDetails:
+        return _material(settings, TeamMemberDetailsScreen(member: settings.arguments as TeamMember));
       case AppRoutes.tools:
         return _material(settings, const ToolsScreen());
       case AppRoutes.scheduler:

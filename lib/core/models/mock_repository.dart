@@ -25,7 +25,10 @@ class MockRepository {
         _financeMonthly = seedFinanceSnapshotsMonthly(),
         _financeYearly = seedFinanceSnapshotsYearly(),
         _invoices = seedInvoices(),
-        _clients = seedClients();
+        _clients = seedClients(),
+        _teamMembers = seedTeamMembers() {
+    _teamCheckIns = seedTeamCheckIns(_teamMembers);
+  }
 
   final List<Project> _projects;
   final List<Task> _tasks;
@@ -38,6 +41,8 @@ class MockRepository {
   final List<FinanceSnapshot> _financeYearly;
   final List<Invoice> _invoices;
   final List<Client> _clients;
+  final List<TeamMember> _teamMembers;
+  late final Map<String, List<TeamCheckIn>> _teamCheckIns;
   final Random _random = Random();
 
   String _generateId(String prefix) {
@@ -180,7 +185,14 @@ class MockRepository {
   Future<Map<String, List<dynamic>>> search(String query) async {
     await Future<void>.delayed(const Duration(milliseconds: 220));
     if (query.isEmpty) {
-      return {'projects': [], 'tasks': [], 'templates': [], 'catalog': [], 'clients': []};
+      return {
+        'projects': [],
+        'tasks': [],
+        'templates': [],
+        'catalog': [],
+        'clients': [],
+        'team': [],
+      };
     }
     final lowered = query.toLowerCase();
     return {
@@ -204,6 +216,13 @@ class MockRepository {
               client.name.toLowerCase().contains(lowered) ||
               client.company.toLowerCase().contains(lowered) ||
               client.tags.any((tag) => tag.toLowerCase().contains(lowered)))
+          .toList(),
+      'team': _teamMembers
+          .where((member) =>
+              member.name.toLowerCase().contains(lowered) ||
+              member.role.toLowerCase().contains(lowered) ||
+              member.location.toLowerCase().contains(lowered) ||
+              member.skills.any((skill) => skill.toLowerCase().contains(lowered)))
           .toList(),
     };
   }
@@ -301,6 +320,191 @@ class MockRepository {
         .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return sorted.take(limit).toList();
+  }
+
+  Future<PaginatedResult<TeamMember>> fetchTeamMembers({
+    required int page,
+    required int pageSize,
+    String status = 'All',
+    String query = '',
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 240));
+    final lowered = query.toLowerCase();
+    final filtered = _teamMembers.where((member) {
+      final statusMatches = status == 'All' || member.status.toLowerCase() == status.toLowerCase();
+      final queryMatches = lowered.isEmpty ||
+          member.name.toLowerCase().contains(lowered) ||
+          member.role.toLowerCase().contains(lowered) ||
+          member.location.toLowerCase().contains(lowered) ||
+          member.skills.any((skill) => skill.toLowerCase().contains(lowered));
+      return statusMatches && queryMatches;
+    }).toList()
+      ..sort((a, b) {
+        if (a.favorite != b.favorite) {
+          return a.favorite ? -1 : 1;
+        }
+        return a.name.compareTo(b.name);
+      });
+    final start = max(0, (page - 1) * pageSize);
+    final end = min(start + pageSize, filtered.length);
+    final slice = start >= filtered.length ? <TeamMember>[] : filtered.sublist(start, end);
+    final hasMore = end < filtered.length;
+    return PaginatedResult<TeamMember>(items: slice, total: filtered.length, hasMore: hasMore);
+  }
+
+  Future<List<TeamCheckIn>> fetchTeamCheckIns(String memberId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    final items = List<TeamCheckIn>.from(_teamCheckIns[memberId] ?? const []);
+    items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return items;
+  }
+
+  Future<TeamCheckIn> addTeamCheckIn({
+    required String memberId,
+    required String summary,
+    required String sentiment,
+    String author = 'Workspace',
+    List<String> highlights = const [],
+    List<String> nextSteps = const [],
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 220));
+    final member = teamMemberById(memberId);
+    final checkIn = TeamCheckIn(
+      id: _generateId('checkin'),
+      memberId: memberId,
+      memberName: member?.name ?? 'Teammate',
+      author: author,
+      summary: summary,
+      sentiment: sentiment,
+      highlights: List<String>.from(highlights),
+      nextSteps: List<String>.from(nextSteps),
+      createdAt: DateTime.now(),
+    );
+    final list = _teamCheckIns.putIfAbsent(memberId, () => <TeamCheckIn>[]);
+    list.insert(0, checkIn);
+    if (member != null) {
+      final updated = member.copyWith(lastActive: DateTime.now());
+      final index = _teamMembers.indexWhere((element) => element.id == memberId);
+      if (index != -1) {
+        _teamMembers[index] = updated;
+      }
+    }
+    return checkIn;
+  }
+
+  Future<TeamMember?> saveTeamMember(TeamMember member) async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    final index = _teamMembers.indexWhere((element) => element.id == member.id);
+    if (index == -1) return null;
+    _teamMembers[index] = member;
+    return member;
+  }
+
+  Future<TeamMember> createTeamMember({
+    required String name,
+    required String role,
+    required String status,
+    String email = '',
+    String location = '',
+    String timezone = '',
+    double focusHours = 12,
+    int tasks = 8,
+    double capacity = 0.5,
+    List<String> skills = const [],
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 220));
+    final member = TeamMember(
+      id: _generateId('team'),
+      name: name,
+      role: role,
+      status: status,
+      email: email,
+      location: location,
+      timezone: timezone,
+      avatarUrl: 'https://i.pravatar.cc/150?img=${_random.nextInt(70) + 1}',
+      focusHoursThisWeek: focusHours.clamp(4, 40).toDouble(),
+      tasksThisWeek: max(1, tasks),
+      capacity: capacity.clamp(0.1, 1.0).toDouble(),
+      skills: skills,
+      favorite: false,
+      lastActive: DateTime.now(),
+      joinedOn: DateTime.now(),
+    );
+    _teamMembers.insert(0, member);
+    _teamCheckIns[member.id] = <TeamCheckIn>[];
+    return member;
+  }
+
+  Future<List<TeamMember>> fetchAllTeamMembers() async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return List<TeamMember>.from(_teamMembers);
+  }
+
+  TeamMember? teamMemberById(String id) {
+    try {
+      return _teamMembers.firstWhere((member) => member.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  int teamMemberCount() => _teamMembers.length;
+
+  int teamMembersByStatus(String status) {
+    return _teamMembers.where((member) => member.status.toLowerCase() == status.toLowerCase()).length;
+  }
+
+  double teamAverageFocusHours() {
+    if (_teamMembers.isEmpty) return 0;
+    final total = _teamMembers.fold<double>(0, (value, member) => value + member.focusHoursThisWeek);
+    return total / _teamMembers.length;
+  }
+
+  double teamAverageCapacity() {
+    if (_teamMembers.isEmpty) return 0;
+    final total = _teamMembers.fold<double>(0, (value, member) => value + member.capacity);
+    return total / _teamMembers.length;
+  }
+
+  int teamFavoriteCount() => _teamMembers.where((member) => member.favorite).length;
+
+  Map<String, int> teamStatusDistribution() {
+    final counts = <String, int>{};
+    for (final member in _teamMembers) {
+      counts.update(member.status, (value) => value + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
+
+  List<TeamMember> topTeamCollaborators({int limit = 3}) {
+    final sorted = List<TeamMember>.from(_teamMembers)
+      ..sort((a, b) {
+        final taskCompare = b.tasksThisWeek.compareTo(a.tasksThisWeek);
+        if (taskCompare != 0) return taskCompare;
+        return b.focusHoursThisWeek.compareTo(a.focusHoursThisWeek);
+      });
+    return sorted.take(limit).toList();
+  }
+
+  int teamCheckInsWithin(Duration duration) {
+    final threshold = DateTime.now().subtract(duration);
+    var count = 0;
+    for (final entry in _teamCheckIns.values) {
+      count += entry.where((checkIn) => checkIn.createdAt.isAfter(threshold)).length;
+    }
+    return count;
+  }
+
+  TeamCheckIn? latestTeamCheckIn() {
+    TeamCheckIn? latest;
+    for (final entry in _teamCheckIns.values) {
+      for (final checkIn in entry) {
+        if (latest == null || checkIn.createdAt.isAfter(latest!.createdAt)) {
+          latest = checkIn;
+        }
+      }
+    }
+    return latest;
   }
 
   List<Task> tasksForDate(DateTime date) {
