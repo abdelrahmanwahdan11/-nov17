@@ -143,6 +143,42 @@ class TasksController extends ChangeNotifier {
     return updateTaskStatus(task, isDone ? 'In Progress' : 'Done');
   }
 
+  Future<Task> createTask({
+    required String title,
+    required String priority,
+    required String status,
+    required DateTime dueDate,
+    required double hours,
+    required String description,
+    required String category,
+  }) async {
+    final task = await _repository.createTask(
+      title: title,
+      priority: priority,
+      status: status,
+      dueDate: dueDate,
+      hours: hours,
+      description: description,
+      category: category,
+    );
+    final matchesStatus = _status == 'All' || task.status.toLowerCase() == _status.toLowerCase();
+    final loweredQuery = _query;
+    final matchesQuery = loweredQuery.isEmpty ||
+        task.title.toLowerCase().contains(loweredQuery) ||
+        task.description.toLowerCase().contains(loweredQuery) ||
+        task.category.toLowerCase().contains(loweredQuery);
+    if (matchesStatus && matchesQuery && _view == TaskView.today) {
+      _paginated.insert(0, task);
+      final maxLength = _page * _pageSize;
+      if (_paginated.length > maxLength && maxLength > 0) {
+        _paginated.removeLast();
+      }
+    }
+    _calendarTasks = _repository.tasksForDate(_selectedDate);
+    notifyListeners();
+    return task;
+  }
+
   void _replaceTask(Task updated) {
     final index = _paginated.indexWhere((task) => task.id == updated.id);
     if (index != -1) {

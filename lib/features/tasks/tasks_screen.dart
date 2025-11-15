@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/localization/app_localizations.dart';
+import '../../core/models/mock_data.dart';
 import '../../core/routing/app_routes.dart';
 import '../../shared/controllers/tasks_controller.dart';
 import '../../shared/controllers/workspace_scope.dart';
@@ -19,6 +20,7 @@ class TasksScreen extends StatefulWidget {
 
 class _TasksScreenState extends State<TasksScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   TasksController? _controller;
   Timer? _debounce;
 
@@ -28,6 +30,7 @@ class _TasksScreenState extends State<TasksScreen> {
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -58,16 +61,23 @@ class _TasksScreenState extends State<TasksScreen> {
       ('Done', loc.translate('status_done')),
     ];
 
-    return RefreshIndicator(
-      onRefresh: controller.refresh,
-      child: AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          final tasks = controller.tasks;
-          final isLoading = controller.isLoading && tasks.isEmpty;
+    return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openCreateTask,
+        icon: const Icon(Icons.add),
+        label: Text(loc.translate('tasks_add_button')),
+      ),
+      body: RefreshIndicator(
+        onRefresh: controller.refresh,
+        child: AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) {
+            final tasks = controller.tasks;
+            final isLoading = controller.isLoading && tasks.isEmpty;
 
           return ListView(
             padding: EdgeInsets.zero,
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
               const SizedBox(height: kToolbarHeight + 16),
               AppHeader(
@@ -75,7 +85,9 @@ class _TasksScreenState extends State<TasksScreen> {
                 subtitle: controller.view == TaskView.today
                     ? loc.translate('tasks_today')
                     : loc.translate('tasks_calendar'),
-                onSearch: () {},
+                onSearch: () {
+                  _searchFocusNode.requestFocus();
+                },
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -103,6 +115,7 @@ class _TasksScreenState extends State<TasksScreen> {
                         Expanded(
                           child: TextField(
                             controller: _searchController,
+                            focusNode: _searchFocusNode,
                             decoration: InputDecoration(
                               prefixIcon: const Icon(Icons.search),
                               hintText: loc.translate('search_tasks_hint'),
@@ -197,23 +210,43 @@ class _TasksScreenState extends State<TasksScreen> {
                                     ),
                             ),
                           if (controller.compareCount > 0)
-                            Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: FilledButton(
-                                onPressed: () => Navigator.pushNamed(context, AppRoutes.compare),
-                                child: Text(
-                                  loc.translate('compare_selected', params: {'count': controller.compareCount.toString()}),
-                                ),
-                              ),
-                            ),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: FilledButton(
+                          onPressed: () => Navigator.pushNamed(context, AppRoutes.compare),
+                          child: Text(
+                            loc.translate('compare_selected', params: {'count': controller.compareCount.toString()}),
+                          ),
+                        ),
                       ),
+                    const SizedBox(height: 120),
+                  ],
+                ),
               ),
             ],
           );
         },
       ),
     );
+  }
+
+  Future<void> _openCreateTask() async {
+    final loc = AppLocalizations.of(context);
+    final created = await showModalBottomSheet<Task?>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: _TaskComposerSheet(controller: controller),
+        );
+      },
+    );
+    if (created != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.translate('tasks_created_success'))),
+      );
+    }
   }
 }
 
@@ -328,6 +361,255 @@ class _DaySelector extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _TaskComposerSheet extends StatefulWidget {
+  const _TaskComposerSheet({required this.controller});
+
+  final TasksController controller;
+
+  @override
+  State<_TaskComposerSheet> createState() => _TaskComposerSheetState();
+}
+
+class _TaskComposerSheetState extends State<_TaskComposerSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  DateTime? _dueDate;
+  String _priority = 'High';
+  String _status = 'Upcoming';
+  double _hours = 2;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _dueDate = DateTime.now().add(const Duration(days: 1));
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _categoryController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final statuses = [
+      ('Upcoming', loc.translate('status_upcoming')),
+      ('In Progress', loc.translate('status_in_progress')),
+      ('Done', loc.translate('status_done')),
+    ];
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        loc.translate('tasks_create_title'),
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _titleController,
+                  decoration: InputDecoration(labelText: loc.translate('tasks_field_title')),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return loc.translate('required_field');
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _categoryController,
+                  decoration: InputDecoration(labelText: loc.translate('tasks_field_category')),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return loc.translate('required_field');
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _descriptionController,
+                  maxLines: 3,
+                  decoration: InputDecoration(labelText: loc.translate('tasks_field_description')),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return loc.translate('required_field');
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                Text(loc.translate('tasks_field_priority'), style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 12,
+                  children: ['High', 'Medium', 'Low']
+                      .map(
+                        (priority) => ChoiceChip(
+                          label: Text(loc.translate('priority_${priority.toLowerCase()}')),
+                          selected: _priority == priority,
+                          onSelected: (_) => setState(() => _priority = priority),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 16),
+                Text(loc.translate('tasks_field_status'), style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 12,
+                  children: statuses
+                      .map(
+                        (entry) => ChoiceChip(
+                          label: Text(entry.$2),
+                          selected: _status == entry.$1,
+                          onSelected: (_) => setState(() => _status = entry.$1),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 16),
+                _TaskDuePicker(
+                  label: loc.translate('tasks_field_due_date'),
+                  initialDate: _dueDate,
+                  onChanged: (value) => setState(() => _dueDate = value),
+                ),
+                const SizedBox(height: 16),
+                Text(loc.translate('tasks_field_hours'), style: Theme.of(context).textTheme.bodySmall),
+                Slider(
+                  value: _hours,
+                  min: 0.5,
+                  max: 12,
+                  divisions: 23,
+                  label: '${_hours.toStringAsFixed(1)}h',
+                  onChanged: (value) => setState(() => _hours = value),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text('${_hours.toStringAsFixed(1)}h'),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _saving ? null : _submit,
+                    child: _saving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(loc.translate('tasks_create_action')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    final loc = AppLocalizations.of(context);
+    if (_saving) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    if (_dueDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.translate('tasks_validation_due'))),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    final task = await widget.controller.createTask(
+      title: _titleController.text.trim(),
+      priority: _priority,
+      status: _status,
+      dueDate: _dueDate!,
+      hours: double.parse(_hours.toStringAsFixed(1)),
+      description: _descriptionController.text.trim(),
+      category: _categoryController.text.trim(),
+    );
+    if (!mounted) return;
+    Navigator.of(context).pop(task);
+  }
+}
+
+class _TaskDuePicker extends StatelessWidget {
+  const _TaskDuePicker({required this.label, required this.initialDate, required this.onChanged});
+
+  final String label;
+  final DateTime? initialDate;
+  final ValueChanged<DateTime?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final materialLoc = MaterialLocalizations.of(context);
+    return InkWell(
+      onTap: () async {
+        final now = DateTime.now();
+        final selected = await showDatePicker(
+          context: context,
+          initialDate: initialDate ?? now,
+          firstDate: now.subtract(const Duration(days: 365)),
+          lastDate: now.add(const Duration(days: 365 * 3)),
+        );
+        onChanged(selected);
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(labelText: label),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_today, size: 18),
+            const SizedBox(width: 12),
+            Text(
+              initialDate == null
+                  ? loc.translate('tasks_due_placeholder')
+                  : materialLoc.formatMediumDate(initialDate!),
+            ),
+          ],
+        ),
       ),
     );
   }

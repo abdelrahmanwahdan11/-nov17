@@ -36,6 +36,12 @@ class MockRepository {
   final List<FinanceSnapshot> _financeMonthly;
   final List<FinanceSnapshot> _financeYearly;
   final List<Invoice> _invoices;
+  final Random _random = Random();
+
+  String _generateId(String prefix) {
+    final suffix = _random.nextInt(999999).toString().padLeft(6, '0');
+    return '$prefix-$suffix';
+  }
 
   Future<PaginatedResult<Project>> fetchProjects({
     required int page,
@@ -51,7 +57,8 @@ class MockRepository {
           project.title.toLowerCase().contains(loweredQuery) ||
           project.tags.any((tag) => tag.toLowerCase().contains(loweredQuery));
       return priorityMatches && queryMatches;
-    }).toList();
+    }).toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
     final start = max(0, (page - 1) * pageSize);
     final end = min(start + pageSize, filtered.length);
     final slice = start >= filtered.length ? <Project>[] : filtered.sublist(start, end);
@@ -74,7 +81,8 @@ class MockRepository {
           task.description.toLowerCase().contains(loweredQuery) ||
           task.category.toLowerCase().contains(loweredQuery);
       return statusMatches && queryMatches;
-    }).toList();
+    }).toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
     final start = max(0, (page - 1) * pageSize);
     final end = min(start + pageSize, filtered.length);
     final slice = start >= filtered.length ? <Task>[] : filtered.sublist(start, end);
@@ -212,6 +220,62 @@ class MockRepository {
     if (index == -1) return null;
     _projects[index] = updated;
     return updated;
+  }
+
+  Future<Task> createTask({
+    required String title,
+    required String priority,
+    required String status,
+    required DateTime dueDate,
+    required double hours,
+    required String description,
+    required String category,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 220));
+    final task = Task(
+      id: _generateId('task'),
+      title: title,
+      priority: priority,
+      status: status,
+      dueDate: dueDate,
+      hours: hours,
+      description: description,
+      category: category,
+    );
+    _tasks
+      ..add(task)
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    return task;
+  }
+
+  Future<Project> createProject({
+    required String title,
+    required String priority,
+    required String status,
+    required DateTime dueDate,
+    required double estimatedHours,
+    required double progress,
+    required List<String> tags,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 240));
+    final project = Project(
+      id: _generateId('project'),
+      title: title,
+      priority: priority,
+      progress: progress,
+      index: 1,
+      status: status,
+      dueDate: dueDate,
+      estimatedHours: estimatedHours,
+      tags: tags,
+    );
+    _projects.insert(0, project);
+    for (var i = 0; i < _projects.length; i++) {
+      final current = _projects[i];
+      if (current.id == project.id) continue;
+      _projects[i] = current.copyWith(index: i + 1);
+    }
+    return project;
   }
 
   List<Task> allTasks() => List.unmodifiable(_tasks);

@@ -115,6 +115,28 @@ class ProjectsController extends ChangeNotifier {
     }
   }
 
+  Future<Project> createProject({
+    required String title,
+    required String priority,
+    required String status,
+    required DateTime dueDate,
+    required double estimatedHours,
+    required double progress,
+    required List<String> tags,
+  }) async {
+    final project = await _repository.createProject(
+      title: title,
+      priority: priority,
+      status: status,
+      dueDate: dueDate,
+      estimatedHours: estimatedHours,
+      progress: progress,
+      tags: tags,
+    );
+    await refresh();
+    return project;
+  }
+
   void _replaceProject(Project project) {
     final index = _projects.indexWhere((item) => item.id == project.id);
     if (index != -1) {
