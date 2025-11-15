@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/localization/app_localizations.dart';
 import '../../core/routing/app_routes.dart';
+import '../../core/models/tracked_session.dart';
 import '../../core/storage/app_preferences.dart';
 
 class AppController extends ChangeNotifier {
@@ -20,6 +21,7 @@ class AppController extends ChangeNotifier {
   String? userEmail;
   Duration lastTrackedDuration = Duration.zero;
   String? lastTrackedTaskId;
+  List<TrackedSession> _trackedSessions = const [];
 
   String get initialRoute {
     if (!onboardingSeen) {
@@ -29,6 +31,41 @@ class AppController extends ChangeNotifier {
       return AppRoutes.login;
     }
     return AppRoutes.home;
+  }
+
+  List<TrackedSession> get trackedSessions => List.unmodifiable(_trackedSessions);
+
+  TrackedSession? get lastTrackedSession => _trackedSessions.isEmpty ? null : _trackedSessions.first;
+
+  Duration get totalTrackedDuration =>
+      _trackedSessions.fold(Duration.zero, (previous, session) => previous + session.duration);
+
+  Duration get weeklyTrackedDuration {
+    final now = DateTime.now();
+    final startOfWeek = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+    return _trackedSessions
+        .where((session) => !session.timestamp.isBefore(startOfWeek))
+        .fold(Duration.zero, (previous, session) => previous + session.duration);
+  }
+
+  String? get topTrackedTaskTitle {
+    if (_trackedSessions.isEmpty) {
+      return null;
+    }
+    final totals = <String, Duration>{};
+    for (final session in _trackedSessions) {
+      final key = session.taskTitle?.trim().isEmpty ?? true
+          ? (session.taskId ?? 'unassigned')
+          : session.taskTitle!;
+      totals[key] = (totals[key] ?? Duration.zero) + session.duration;
+    }
+    final sorted = totals.entries.toList()
+      ..sort((a, b) => b.value.inSeconds.compareTo(a.value.inSeconds));
+    final top = sorted.first;
+    if (top.key == 'unassigned') {
+      return null;
+    }
+    return top.key;
   }
 
   Future<void> restore() async {
@@ -41,6 +78,7 @@ class AppController extends ChangeNotifier {
     userEmail = _preferences.restoreUserEmail();
     lastTrackedDuration = _preferences.restoreTimeTrackerDuration();
     lastTrackedTaskId = _preferences.restoreTimeTrackerTask();
+    _trackedSessions = _preferences.restoreTimeTrackerHistory();
     notifyListeners();
   }
 
@@ -91,6 +129,21 @@ class AppController extends ChangeNotifier {
   Future<void> updateLastTrackedTask(String? taskId) async {
     lastTrackedTaskId = taskId;
     await _preferences.persistTimeTrackerTask(taskId);
+    notifyListeners();
+  }
+
+  Future<void> recordTrackedSession(TrackedSession session) async {
+    final updated = [session, ..._trackedSessions];
+    _trackedSessions = updated.length > 20 ? updated.take(20).toList() : updated;
+    await _preferences.persistTimeTrackerHistory(_trackedSessions);
+    notifyListeners();
+  }
+
+  Future<void> clearTrackedSessions() async {
+    _trackedSessions = const [];
+    lastTrackedDuration = Duration.zero;
+    await _preferences.persistTimeTrackerHistory(_trackedSessions);
+    await _preferences.persistTimeTrackerDuration(lastTrackedDuration);
     notifyListeners();
   }
 

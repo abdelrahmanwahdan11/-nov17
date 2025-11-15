@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/tracked_session.dart';
+
 class AppPreferences {
   AppPreferences(this._prefs);
 
@@ -17,6 +19,7 @@ class AppPreferences {
   static const _userEmailKey = 'user_email';
   static const _timeTrackerSecondsKey = 'time_tracker_last_seconds';
   static const _timeTrackerTaskKey = 'time_tracker_last_task';
+  static const _timeTrackerHistoryKey = 'time_tracker_history';
 
   static Future<AppPreferences> getInstance() async {
     final prefs = await SharedPreferences.getInstance();
@@ -114,5 +117,18 @@ class AppPreferences {
     } else {
       await _prefs.setString(_timeTrackerTaskKey, taskId);
     }
+  }
+
+  List<TrackedSession> restoreTimeTrackerHistory() {
+    final values = _prefs.getStringList(_timeTrackerHistoryKey);
+    if (values == null) {
+      return const [];
+    }
+    return values.map(TrackedSession.fromEncoded).toList(growable: false);
+  }
+
+  Future<void> persistTimeTrackerHistory(List<TrackedSession> sessions) async {
+    final encoded = sessions.map((session) => session.encode()).toList(growable: false);
+    await _prefs.setStringList(_timeTrackerHistoryKey, encoded);
   }
 }

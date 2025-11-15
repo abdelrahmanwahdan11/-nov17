@@ -98,6 +98,8 @@ class DashboardScreen extends StatelessWidget {
                       const SizedBox(height: 24),
                       _PaymentSummaryCard(),
                       const SizedBox(height: 24),
+                      const _FocusSummaryCard(),
+                      const SizedBox(height: 24),
                       _MonthlyTimeline(
                         title: loc.translate('monthly_tasks'),
                         tasks: timeline.take(5).toList(),
@@ -240,6 +242,123 @@ class _PaymentSummaryCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _FocusSummaryCard extends StatelessWidget {
+  const _FocusSummaryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = WorkspaceScope.of(context);
+    final app = scope.app;
+    final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final materialLoc = MaterialLocalizations.of(context);
+
+    return AnimatedBuilder(
+      animation: app,
+      builder: (context, _) {
+        final weekly = app.weeklyTrackedDuration;
+        final total = app.totalTrackedDuration;
+        final topTask = app.topTrackedTaskTitle;
+        final last = app.lastTrackedSession;
+
+        final weeklyLabel = _formatDuration(weekly);
+        final totalLabel = _formatDuration(total);
+        final topTaskLabel = topTask == null
+            ? loc.translate('dashboard_focus_top_task_empty')
+            : loc.translate('dashboard_focus_top_task', params: {'task': topTask});
+        final lastLabel = last == null
+            ? loc.translate('dashboard_focus_last_empty')
+            : loc.translate(
+                'dashboard_focus_last',
+                params: {
+                  'duration': _formatDuration(last.duration),
+                  'time': '${materialLoc.formatShortDate(last.timestamp)} · '
+                      '${materialLoc.formatTimeOfDay(TimeOfDay.fromDateTime(last.timestamp))}',
+                },
+              );
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(loc.translate('dashboard_focus_title'), style: theme.textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _FocusMetric(
+                      label: loc.translate('dashboard_focus_week_label'),
+                      value: weeklyLabel,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _FocusMetric(
+                      label: loc.translate('dashboard_focus_total_label'),
+                      value: totalLabel,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(topTaskLabel, style: theme.textTheme.bodyMedium),
+              const SizedBox(height: 8),
+              Text(lastLabel, style: theme.textTheme.bodySmall),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    if (duration.inSeconds == 0) {
+      return '0m';
+    }
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    if (hours == 0 && minutes == 0) {
+      return '${duration.inSeconds}s';
+    }
+    if (hours > 0) {
+      return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
+    }
+    return '${minutes}m';
+  }
+}
+
+class _FocusMetric extends StatelessWidget {
+  const _FocusMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 6),
+          Text(value, style: Theme.of(context).textTheme.titleMedium),
+        ],
+      ),
     );
   }
 }

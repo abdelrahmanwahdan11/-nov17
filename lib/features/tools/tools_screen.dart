@@ -45,11 +45,16 @@ class ToolsScreen extends StatelessWidget {
                 'tools_library_count',
                 params: {'count': scope.library.items.length.toString()},
               );
-              final duration = scope.app.lastTrackedDuration;
-              final formattedDuration = _formatDuration(duration, materialLoc);
+              final lastDuration = scope.app.lastTrackedDuration;
+              final weeklyDuration = scope.app.weeklyTrackedDuration;
+              final formattedLast = _formatDuration(lastDuration, materialLoc);
+              final formattedWeek = _formatDuration(weeklyDuration, materialLoc);
               final timeTrackerSubtitle = loc.translate(
                 'tools_time_tracker_subtitle',
-                params: {'duration': formattedDuration},
+                params: {
+                  'last': formattedLast,
+                  'week': formattedWeek,
+                },
               );
 
               final cards = [
@@ -174,6 +179,9 @@ class ToolsScreen extends StatelessWidget {
     }
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
+    if (hours == 0 && minutes == 0) {
+      return '${duration.inSeconds}s';
+    }
     if (hours > 0) {
       return '${hours}h ${minutes.toString().padLeft(2, '0')}m';
     }
