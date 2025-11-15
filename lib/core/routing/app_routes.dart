@@ -15,6 +15,7 @@ class AppRoutes {
   static const scheduler = '/tools/scheduler';
   static const templates = '/tools/templates';
   static const library = '/tools/library';
+  static const insights = '/tools/insights';
   static const timeTracker = '/time-tracker';
   static const catalog = '/catalog';
   static const compare = '/compare';

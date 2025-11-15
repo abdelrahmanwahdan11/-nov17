@@ -14,7 +14,7 @@ class ToolsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = WorkspaceScope.of(context);
-    final listenable = Listenable.merge([scope.scheduler, scope.templates, scope.library, scope.app]);
+    final listenable = Listenable.merge([scope.scheduler, scope.templates, scope.library, scope.app, scope.insights]);
     final loc = AppLocalizations.of(context);
 
     return ListView(
@@ -45,6 +45,16 @@ class ToolsScreen extends StatelessWidget {
                 'tools_library_count',
                 params: {'count': scope.library.items.length.toString()},
               );
+              final insightsRate = (scope.insights.completionRate * 100).clamp(0, 100).toStringAsFixed(0);
+              final insightsDeadlines = scope.insights.deadlines.length;
+              final insightsSubtitle = insightsDeadlines == 0
+                  ? loc.translate('tools_insights_summary_zero', params: {'rate': insightsRate})
+                  : insightsDeadlines == 1
+                      ? loc.translate('tools_insights_summary_one', params: {'rate': insightsRate})
+                      : loc.translate(
+                          'tools_insights_summary_many',
+                          params: {'rate': insightsRate, 'count': insightsDeadlines.toString()},
+                        );
               final lastDuration = scope.app.lastTrackedDuration;
               final weeklyDuration = scope.app.weeklyTrackedDuration;
               final formattedLast = _formatDuration(lastDuration, materialLoc);
@@ -70,6 +80,12 @@ class ToolsScreen extends StatelessWidget {
                   subtitle: schedulerSubtitle,
                   route: AppRoutes.scheduler,
                   highlight: schedulerPeek.isNotEmpty,
+                ),
+                _ToolCardData(
+                  icon: IconlyBold.activity,
+                  title: loc.translate('tools_insights'),
+                  subtitle: insightsSubtitle,
+                  route: AppRoutes.insights,
                 ),
                 _ToolCardData(
                   icon: IconlyBold.document,

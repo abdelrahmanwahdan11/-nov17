@@ -23,6 +23,7 @@ import '../../features/tools/library_screen.dart';
 import '../../features/tools/scheduler_screen.dart';
 import '../../features/tools/templates_screen.dart';
 import '../../features/tools/tools_screen.dart';
+import '../../features/insights/insights_screen.dart';
 import '../models/mock_data.dart';
 import 'app_routes.dart';
 
@@ -66,6 +67,8 @@ class AppRouter {
         return _material(settings, const TemplatesScreen());
       case AppRoutes.library:
         return _material(settings, const LibraryScreen());
+      case AppRoutes.insights:
+        return _material(settings, const InsightsScreen());
       case AppRoutes.catalog:
         return _material(settings, const CatalogScreen());
       case AppRoutes.compare:

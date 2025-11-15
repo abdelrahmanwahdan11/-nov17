@@ -278,6 +278,8 @@ class MockRepository {
     return project;
   }
 
+  List<Project> allProjects() => List.unmodifiable(_projects);
+
   List<Task> allTasks() => List.unmodifiable(_tasks);
 
   Future<List<ScheduleEntry>> fetchSchedule(DateTime date) async {
