@@ -251,6 +251,79 @@ class Invoice {
   }
 }
 
+class ClientInteraction {
+  const ClientInteraction({
+    required this.id,
+    required this.type,
+    required this.note,
+    required this.timestamp,
+  });
+
+  final String id;
+  final String type;
+  final String note;
+  final DateTime timestamp;
+}
+
+class Client {
+  Client({
+    required this.id,
+    required this.name,
+    required this.company,
+    required this.stage,
+    required this.value,
+    required this.email,
+    required this.phone,
+    required this.notes,
+    required this.tags,
+    required this.starred,
+    required this.lastInteraction,
+    required this.interactions,
+  });
+
+  final String id;
+  final String name;
+  final String company;
+  final String stage;
+  final double value;
+  final String email;
+  final String phone;
+  final String notes;
+  final List<String> tags;
+  final bool starred;
+  final DateTime lastInteraction;
+  final List<ClientInteraction> interactions;
+
+  Client copyWith({
+    String? name,
+    String? company,
+    String? stage,
+    double? value,
+    String? email,
+    String? phone,
+    String? notes,
+    List<String>? tags,
+    bool? starred,
+    DateTime? lastInteraction,
+    List<ClientInteraction>? interactions,
+  }) {
+    return Client(
+      id: id,
+      name: name ?? this.name,
+      company: company ?? this.company,
+      stage: stage ?? this.stage,
+      value: value ?? this.value,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      notes: notes ?? this.notes,
+      tags: tags ?? this.tags,
+      starred: starred ?? this.starred,
+      lastInteraction: lastInteraction ?? this.lastInteraction,
+      interactions: interactions ?? this.interactions,
+    );
+  }
+}
+
 class LibraryItem {
   LibraryItem({
     required this.id,
@@ -847,6 +920,183 @@ List<Invoice> seedInvoices() {
       amount: 18800,
       dueDate: now.add(const Duration(days: 32)),
       status: 'Due',
+    ),
+  ];
+}
+
+List<Client> seedClients() {
+  final now = DateTime.now();
+  return [
+    Client(
+      id: 'client-001',
+      name: 'Lina Faris',
+      company: 'Aurora Ventures',
+      stage: 'Negotiation',
+      value: 18500,
+      email: 'lina@auroraventures.io',
+      phone: '+971 52 111 2233',
+      notes: 'Finalising scope adjustments for automation rollout.',
+      tags: const ['venture', 'automation'],
+      starred: true,
+      lastInteraction: now.subtract(const Duration(days: 1, hours: 3)),
+      interactions: [
+        ClientInteraction(
+          id: 'log-001a',
+          type: 'Call',
+          note: 'Aligned on budget guardrails and payment milestones.',
+          timestamp: now.subtract(const Duration(days: 1, hours: 3)),
+        ),
+        ClientInteraction(
+          id: 'log-001b',
+          type: 'Email',
+          note: 'Shared revised architecture slides and success metrics.',
+          timestamp: now.subtract(const Duration(days: 4)),
+        ),
+      ],
+    ),
+    Client(
+      id: 'client-002',
+      name: 'Omar Riyadi',
+      company: 'Nebula Labs',
+      stage: 'Proposal',
+      value: 12600,
+      email: 'omar@nebulalabs.dev',
+      phone: '+1 415 555 0189',
+      notes: 'Waiting on security review feedback before sign-off.',
+      tags: const ['product', 'scaleup'],
+      starred: false,
+      lastInteraction: now.subtract(const Duration(hours: 8)),
+      interactions: [
+        ClientInteraction(
+          id: 'log-002a',
+          type: 'Meeting',
+          note: 'Walked through analytics instrumentation timeline.',
+          timestamp: now.subtract(const Duration(hours: 8)),
+        ),
+        ClientInteraction(
+          id: 'log-002b',
+          type: 'Email',
+          note: 'Sent follow-up docs requested by engineering.',
+          timestamp: now.subtract(const Duration(days: 2, hours: 6)),
+        ),
+      ],
+    ),
+    Client(
+      id: 'client-003',
+      name: 'Sara Elwan',
+      company: 'Brightline Studio',
+      stage: 'Won',
+      value: 9200,
+      email: 'sara@brightline.studio',
+      phone: '+44 20 7946 0650',
+      notes: 'Kickoff scheduled next week with brand and ops teams.',
+      tags: const ['design', 'retainer'],
+      starred: true,
+      lastInteraction: now.subtract(const Duration(days: 2, hours: 4)),
+      interactions: [
+        ClientInteraction(
+          id: 'log-003a',
+          type: 'Call',
+          note: 'Confirmed scope and timeline, contract countersigned.',
+          timestamp: now.subtract(const Duration(days: 2, hours: 4)),
+        ),
+        ClientInteraction(
+          id: 'log-003b',
+          type: 'Email',
+          note: 'Shared kickoff agenda draft and workspace invite.',
+          timestamp: now.subtract(const Duration(days: 5)),
+        ),
+      ],
+    ),
+    Client(
+      id: 'client-004',
+      name: 'Ranya Qassim',
+      company: 'Skyline Retail',
+      stage: 'Prospect',
+      value: 6400,
+      email: 'ranya@skylineretail.co',
+      phone: '+971 4 600 9911',
+      notes: 'Preparing tailored catalog automation demo.',
+      tags: const ['retail', 'catalog'],
+      starred: false,
+      lastInteraction: now.subtract(const Duration(days: 3, hours: 6)),
+      interactions: [
+        ClientInteraction(
+          id: 'log-004a',
+          type: 'Call',
+          note: 'Introduced workspace and captured integration needs.',
+          timestamp: now.subtract(const Duration(days: 3, hours: 6)),
+        ),
+      ],
+    ),
+    Client(
+      id: 'client-005',
+      name: 'Jonah Price',
+      company: 'Atlas Fintech',
+      stage: 'Contacted',
+      value: 15400,
+      email: 'jonah@atlasfin.tech',
+      phone: '+1 212 555 0193',
+      notes: 'Needs alignment with compliance before next workshop.',
+      tags: const ['finance', 'compliance'],
+      starred: true,
+      lastInteraction: now.subtract(const Duration(days: 6, hours: 2)),
+      interactions: [
+        ClientInteraction(
+          id: 'log-005a',
+          type: 'Email',
+          note: 'Sent tailored case studies and onboarding outline.',
+          timestamp: now.subtract(const Duration(days: 6, hours: 2)),
+        ),
+      ],
+    ),
+    Client(
+      id: 'client-006',
+      name: 'Mira Santos',
+      company: 'Merge Collective',
+      stage: 'Lost',
+      value: 7800,
+      email: 'mira@mergecollective.agency',
+      phone: '+55 11 5550 1020',
+      notes: 'Paused due to internal team bandwidth, follow up next quarter.',
+      tags: const ['agency', 'pause'],
+      starred: false,
+      lastInteraction: now.subtract(const Duration(days: 14)),
+      interactions: [
+        ClientInteraction(
+          id: 'log-006a',
+          type: 'Call',
+          note: 'Chose to pause after internal reprioritisation.',
+          timestamp: now.subtract(const Duration(days: 14)),
+        ),
+      ],
+    ),
+    Client(
+      id: 'client-007',
+      name: 'Kareem Dalia',
+      company: 'Northshore Bank',
+      stage: 'Proposal',
+      value: 21200,
+      email: 'kareem@northshorebank.com',
+      phone: '+1 617 555 0177',
+      notes: 'Reviewing contract with procurement, warm follow-up tomorrow.',
+      tags: const ['banking', 'enterprise'],
+      starred: true,
+      lastInteraction: now.subtract(const Duration(hours: 30)),
+      interactions: [
+        ClientInteraction(
+          id: 'log-007a',
+          type: 'Email',
+          note: 'Shared implementation roadmap and ROI summary.',
+          timestamp: now.subtract(const Duration(hours: 30)),
+        ),
+        ClientInteraction(
+          id: 'log-007b',
+          type: 'Meeting',
+          note: 'Walked procurement through compliance checklist.',
+          timestamp: now.subtract(const Duration(days: 3)),
+        ),
+      ],
     ),
   ];
 }

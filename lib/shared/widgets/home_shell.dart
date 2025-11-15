@@ -11,6 +11,7 @@ import '../../features/finance/finance_overview_screen.dart';
 import '../../features/catalog/catalog_screen.dart';
 import '../../features/compare/compare_screen.dart';
 import '../../features/search/search_screen.dart';
+import '../../features/clients/clients_screen.dart';
 import '../../features/tools/tools_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
@@ -18,6 +19,7 @@ import '../controllers/app_controller.dart';
 import '../controllers/catalog_controller.dart';
 import '../controllers/compare_controller.dart';
 import '../controllers/notifications_controller.dart';
+import '../controllers/clients_controller.dart';
 import '../controllers/projects_controller.dart';
 import '../controllers/scheduler_controller.dart';
 import '../controllers/tasks_controller.dart';
@@ -45,6 +47,7 @@ class _HomeShellState extends State<HomeShell> {
   late final TasksController _tasksController;
   late final CatalogController _catalogController;
   late final NotificationsController _notificationsController;
+  late final ClientsController _clientsController;
   late final SchedulerController _schedulerController;
   late final TemplatesController _templatesController;
   late final LibraryController _libraryController;
@@ -64,6 +67,7 @@ class _HomeShellState extends State<HomeShell> {
     _catalogController = CatalogController(repository: _repository, compare: _compareController);
     _notificationsController = NotificationsController(repository: _repository)
       ..addListener(_onNotificationsChanged);
+    _clientsController = ClientsController(repository: _repository);
     _schedulerController = SchedulerController(repository: _repository);
     _templatesController = TemplatesController(repository: _repository);
     _libraryController = LibraryController(repository: _repository);
@@ -86,6 +90,7 @@ class _HomeShellState extends State<HomeShell> {
       _tasksController.bootstrap();
       _catalogController.bootstrap();
       _notificationsController.bootstrap();
+      _clientsController.bootstrap();
       _schedulerController.bootstrap();
       _templatesController.bootstrap();
       _libraryController.bootstrap();
@@ -110,6 +115,7 @@ class _HomeShellState extends State<HomeShell> {
     _notificationsController
       ..removeListener(_onNotificationsChanged)
       ..dispose();
+    _clientsController.dispose();
     _schedulerController.dispose();
     _templatesController.dispose();
     _libraryController.dispose();
@@ -128,7 +134,7 @@ class _HomeShellState extends State<HomeShell> {
 
   void _openNotifications() {
     setState(() {
-      _index = 9;
+      _index = 10;
       _drawerOpen = false;
     });
   }
@@ -146,16 +152,18 @@ class _HomeShellState extends State<HomeShell> {
       case 4:
         return const FinanceOverviewScreen();
       case 5:
-        return const ToolsScreen();
+        return const ClientsScreen();
       case 6:
-        return const CatalogScreen();
+        return const ToolsScreen();
       case 7:
-        return const CompareScreen();
+        return const CatalogScreen();
       case 8:
-        return const SearchScreen();
+        return const CompareScreen();
       case 9:
-        return const NotificationsScreen();
+        return const SearchScreen();
       case 10:
+        return const NotificationsScreen();
+      case 11:
         return SettingsScreen(controller: widget.controller);
     }
     return const SizedBox.shrink();
@@ -174,6 +182,7 @@ class _HomeShellState extends State<HomeShell> {
       loc.translate('tasks'),
       loc.translate('calendar'),
       loc.translate('finance'),
+      loc.translate('clients'),
       loc.translate('tools'),
       loc.translate('catalog'),
       loc.translate('compare'),
@@ -190,6 +199,7 @@ class _HomeShellState extends State<HomeShell> {
       catalog: _catalogController,
       compare: _compareController,
       notifications: _notificationsController,
+      clients: _clientsController,
       scheduler: _schedulerController,
       templates: _templatesController,
       library: _libraryController,

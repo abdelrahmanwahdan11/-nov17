@@ -20,7 +20,13 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   Timer? _debounce;
-  Map<String, List<dynamic>> _results = const {'projects': [], 'tasks': [], 'templates': [], 'catalog': []};
+  Map<String, List<dynamic>> _results = const {
+    'projects': [],
+    'tasks': [],
+    'templates': [],
+    'catalog': [],
+    'clients': [],
+  };
   bool _isSearching = false;
 
   MockRepository get repository => WorkspaceScope.of(context).repository;
@@ -38,7 +44,13 @@ class _SearchScreenState extends State<SearchScreen> {
     if (trimmed.isEmpty) {
       setState(() {
         _isSearching = false;
-        _results = const {'projects': [], 'tasks': [], 'templates': [], 'catalog': []};
+        _results = const {
+          'projects': [],
+          'tasks': [],
+          'templates': [],
+          'catalog': [],
+          'clients': [],
+        };
       });
       return;
     }
@@ -189,6 +201,13 @@ class _SearchScreenState extends State<SearchScreen> {
                       Navigator.pushNamed(context, AppRoutes.catalog);
                     },
                   ),
+                  _ClientSearchSection(
+                    clients: List<Client>.from(_results['clients'] ?? const []),
+                    onTap: (client) {
+                      _persistCurrentQuery();
+                      Navigator.pushNamed(context, AppRoutes.clients);
+                    },
+                  ),
                 ],
               ),
             ),
@@ -260,6 +279,39 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _ClientSearchSection extends StatelessWidget {
+  const _ClientSearchSection({required this.clients, required this.onTap});
+
+  final List<Client> clients;
+  final ValueChanged<Client> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (clients.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final loc = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(loc.translate('search_results_clients'), style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        ...clients.map(
+          (client) => ListTile(
+            title: Text(client.name),
+            subtitle: Text(
+              '${client.company} · ${loc.translate('clients_stage_${client.stage.toLowerCase()}')}',
+            ),
+            trailing: Text('\$${client.value.toStringAsFixed(0)}'),
+            onTap: () => onTap(client),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }

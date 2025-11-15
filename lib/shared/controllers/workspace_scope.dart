@@ -5,6 +5,7 @@ import 'app_controller.dart';
 import 'catalog_controller.dart';
 import 'compare_controller.dart';
 import 'notifications_controller.dart';
+import 'clients_controller.dart';
 import 'projects_controller.dart';
 import 'scheduler_controller.dart';
 import 'tasks_controller.dart';
@@ -24,6 +25,7 @@ class WorkspaceScope extends InheritedWidget {
     required this.catalog,
     required this.compare,
     required this.notifications,
+    required this.clients,
     required this.scheduler,
     required this.templates,
     required this.library,
@@ -40,6 +42,7 @@ class WorkspaceScope extends InheritedWidget {
   final CatalogController catalog;
   final CompareController compare;
   final NotificationsController notifications;
+  final ClientsController clients;
   final SchedulerController scheduler;
   final TemplatesController templates;
   final LibraryController library;

@@ -60,6 +60,8 @@ class AppRouter {
         return _material(settings, const CalendarScreen());
       case AppRoutes.finance:
         return _material(settings, const FinanceOverviewScreen());
+      case AppRoutes.clients:
+        return _material(settings, const ClientsScreen());
       case AppRoutes.tools:
         return _material(settings, const ToolsScreen());
       case AppRoutes.scheduler:

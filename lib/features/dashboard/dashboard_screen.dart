@@ -19,6 +19,7 @@ class DashboardScreen extends StatelessWidget {
       scope.tasks.refresh(),
       scope.catalog.refresh(),
       scope.goals.refresh(),
+      scope.clients.refresh(),
     ]);
   }
 
@@ -31,7 +32,7 @@ class DashboardScreen extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () => _refresh(context),
       child: AnimatedBuilder(
-        animation: Listenable.merge([scope.projects, scope.tasks, scope.catalog, scope.goals]),
+        animation: Listenable.merge([scope.projects, scope.tasks, scope.catalog, scope.goals, scope.clients]),
         builder: (context, _) {
           final projects = scope.projects;
           final tasks = scope.tasks;
@@ -98,6 +99,8 @@ class DashboardScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 24),
+                      const _ClientPipelineCard(),
+                      const SizedBox(height: 24),
                       _PaymentSummaryCard(),
                       const SizedBox(height: 24),
                       const _FocusSummaryCard(),
@@ -145,6 +148,156 @@ class _DashboardSkeleton extends StatelessWidget {
         SizedBox(height: 16),
         SkeletonContainer(height: 200),
       ],
+    );
+  }
+}
+
+class _ClientPipelineCard extends StatelessWidget {
+  const _ClientPipelineCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = WorkspaceScope.of(context);
+    final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return AnimatedBuilder(
+      animation: scope.clients,
+      builder: (context, _) {
+        final clients = scope.clients;
+        final pipeline = clients.pipelineValue;
+        final active = clients.activeClients;
+        final starred = clients.starredClients;
+        final stageCounts = clients.stageDistribution;
+        final spotlight = clients.spotlight;
+        final keyStages = ['Negotiation', 'Proposal', 'Won'];
+        final focusCount = keyStages.fold<int>(0, (value, stage) => value + (stageCounts[stage] ?? 0));
+
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(loc.translate('dashboard_clients_card_title'), style: theme.textTheme.titleLarge),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.clients),
+                    child: Text(loc.translate('clients_view_all')),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                loc.translate(
+                  'dashboard_clients_card_subtitle',
+                  params: {
+                    'count': active.toString(),
+                    'value': pipeline.toStringAsFixed(0),
+                  },
+                ),
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _InsightPill(
+                    icon: Icons.auto_graph_rounded,
+                    label: loc.translate('clients_pipeline_focus', params: {'count': focusCount.toString()}),
+                    color: theme.colorScheme.primary.withOpacity(0.18),
+                  ),
+                  _InsightPill(
+                    icon: Icons.star_rounded,
+                    label: loc.translate('clients_pipeline_starred', params: {'count': starred.toString()}),
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                  ),
+                  _InsightPill(
+                    icon: Icons.monetization_on_outlined,
+                    label: '\$${pipeline.toStringAsFixed(0)}',
+                    color: theme.colorScheme.primary.withOpacity(0.1),
+                  ),
+                ],
+              ),
+              if (spotlight.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Text(loc.translate('clients_spotlight_title'), style: theme.textTheme.titleMedium),
+                const SizedBox(height: 12),
+                ...spotlight.map(
+                  (client) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: theme.colorScheme.primary.withOpacity(0.18),
+                          child: Text(
+                            client.name.isEmpty ? '?' : client.name.substring(0, 1).toUpperCase(),
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(client.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                              Text(client.company, style: theme.textTheme.bodySmall),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('\$${client.value.toStringAsFixed(0)}', style: theme.textTheme.titleSmall),
+                            Text(loc.translate('clients_stage_${client.stage.toLowerCase()}'), style: theme.textTheme.labelSmall),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _InsightPill extends StatelessWidget {
+  const _InsightPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 8),
+          Text(label, style: Theme.of(context).textTheme.labelMedium),
+        ],
+      ),
     );
   }
 }

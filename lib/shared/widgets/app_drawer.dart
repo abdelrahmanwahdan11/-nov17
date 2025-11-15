@@ -29,6 +29,7 @@ class AppDrawer extends StatelessWidget {
       IconlyBold.paper,
       IconlyBold.calendar,
       IconlyBold.wallet,
+      IconlyBold.user_1,
       IconlyBold.setting,
       IconlyBold.buy,
       IconlyBold.activity,

@@ -24,7 +24,8 @@ class MockRepository {
         _library = seedLibraryItems(),
         _financeMonthly = seedFinanceSnapshotsMonthly(),
         _financeYearly = seedFinanceSnapshotsYearly(),
-        _invoices = seedInvoices();
+        _invoices = seedInvoices(),
+        _clients = seedClients();
 
   final List<Project> _projects;
   final List<Task> _tasks;
@@ -36,6 +37,7 @@ class MockRepository {
   final List<FinanceSnapshot> _financeMonthly;
   final List<FinanceSnapshot> _financeYearly;
   final List<Invoice> _invoices;
+  final List<Client> _clients;
   final Random _random = Random();
 
   String _generateId(String prefix) {
@@ -115,6 +117,30 @@ class MockRepository {
     return PaginatedResult<CatalogItem>(items: slice, total: filtered.length, hasMore: hasMore);
   }
 
+  Future<PaginatedResult<Client>> fetchClients({
+    required int page,
+    required int pageSize,
+    String stage = 'All',
+    String query = '',
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 260));
+    final loweredQuery = query.toLowerCase();
+    final filtered = _clients.where((client) {
+      final stageMatches = stage == 'All' || client.stage.toLowerCase() == stage.toLowerCase();
+      final queryMatches = loweredQuery.isEmpty ||
+          client.name.toLowerCase().contains(loweredQuery) ||
+          client.company.toLowerCase().contains(loweredQuery) ||
+          client.tags.any((tag) => tag.toLowerCase().contains(loweredQuery));
+      return stageMatches && queryMatches;
+    }).toList()
+      ..sort((a, b) => b.lastInteraction.compareTo(a.lastInteraction));
+    final start = max(0, (page - 1) * pageSize);
+    final end = min(start + pageSize, filtered.length);
+    final slice = start >= filtered.length ? <Client>[] : filtered.sublist(start, end);
+    final hasMore = end < filtered.length;
+    return PaginatedResult<Client>(items: slice, total: filtered.length, hasMore: hasMore);
+  }
+
   Future<List<AppNotification>> fetchNotifications() async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     final notifications = List<AppNotification>.from(_notifications)
@@ -154,7 +180,7 @@ class MockRepository {
   Future<Map<String, List<dynamic>>> search(String query) async {
     await Future<void>.delayed(const Duration(milliseconds: 220));
     if (query.isEmpty) {
-      return {'projects': [], 'tasks': [], 'templates': [], 'catalog': []};
+      return {'projects': [], 'tasks': [], 'templates': [], 'catalog': [], 'clients': []};
     }
     final lowered = query.toLowerCase();
     return {
@@ -173,7 +199,108 @@ class MockRepository {
       'catalog': _catalog
           .where((item) => item.title.toLowerCase().contains(lowered) || item.summary.toLowerCase().contains(lowered))
           .toList(),
+      'clients': _clients
+          .where((client) =>
+              client.name.toLowerCase().contains(lowered) ||
+              client.company.toLowerCase().contains(lowered) ||
+              client.tags.any((tag) => tag.toLowerCase().contains(lowered)))
+          .toList(),
     };
+  }
+
+  Future<Client?> saveClient(Client updated) async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    final index = _clients.indexWhere((client) => client.id == updated.id);
+    if (index == -1) return null;
+    _clients[index] = updated;
+    return updated;
+  }
+
+  Future<Client> createClient({
+    required String name,
+    required String company,
+    required String stage,
+    required double value,
+    String? email,
+    String? phone,
+    String? notes,
+    List<String> tags = const [],
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    final client = Client(
+      id: _generateId('cli'),
+      name: name,
+      company: company,
+      stage: stage,
+      value: value,
+      email: email ?? '',
+      phone: phone ?? '',
+      notes: notes ?? '',
+      tags: tags,
+      starred: false,
+      lastInteraction: DateTime.now(),
+      interactions: const [],
+    );
+    _clients.insert(0, client);
+    return client;
+  }
+
+  Future<Client?> addClientInteraction({
+    required String id,
+    required String type,
+    required String note,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    final index = _clients.indexWhere((client) => client.id == id);
+    if (index == -1) return null;
+    final interaction = ClientInteraction(
+      id: _generateId('log'),
+      type: type,
+      note: note,
+      timestamp: DateTime.now(),
+    );
+    final current = _clients[index];
+    final updated = current.copyWith(
+      lastInteraction: interaction.timestamp,
+      interactions: [interaction, ...current.interactions],
+    );
+    _clients[index] = updated;
+    return updated;
+  }
+
+  double clientsPipelineValue({bool includeWon = false}) {
+    return _clients
+        .where((client) {
+          final stage = client.stage.toLowerCase();
+          if (stage == 'lost') return false;
+          if (!includeWon && stage == 'won') return false;
+          return true;
+        })
+        .fold(0, (previousValue, client) => previousValue + client.value);
+  }
+
+  int activeClientCount() {
+    return _clients.where((client) => client.stage.toLowerCase() != 'lost').length;
+  }
+
+  int starredClientCount() {
+    return _clients.where((client) => client.starred).length;
+  }
+
+  Map<String, int> clientsByStage() {
+    final counts = <String, int>{};
+    for (final client in _clients) {
+      counts.update(client.stage, (value) => value + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
+
+  List<Client> topPipelineClients({int limit = 3}) {
+    final sorted = _clients
+        .where((client) => client.stage.toLowerCase() != 'lost')
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.take(limit).toList();
   }
 
   List<Task> tasksForDate(DateTime date) {

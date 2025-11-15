@@ -11,6 +11,7 @@ class AppRoutes {
   static const taskDetails = '/tasks/details';
   static const calendar = '/calendar';
   static const finance = '/finance';
+  static const clients = '/clients';
   static const tools = '/tools';
   static const scheduler = '/tools/scheduler';
   static const templates = '/tools/templates';
