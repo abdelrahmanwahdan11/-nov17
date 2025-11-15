@@ -18,6 +18,8 @@ class AppController extends ChangeNotifier {
   bool isLoggedIn = false;
   String? userName;
   String? userEmail;
+  Duration lastTrackedDuration = Duration.zero;
+  String? lastTrackedTaskId;
 
   String get initialRoute {
     if (!onboardingSeen) {
@@ -37,6 +39,8 @@ class AppController extends ChangeNotifier {
     isLoggedIn = _preferences.restoreIsLoggedIn();
     userName = _preferences.restoreUserName();
     userEmail = _preferences.restoreUserEmail();
+    lastTrackedDuration = _preferences.restoreTimeTrackerDuration();
+    lastTrackedTaskId = _preferences.restoreTimeTrackerTask();
     notifyListeners();
   }
 
@@ -75,6 +79,18 @@ class AppController extends ChangeNotifier {
     userEmail = email?.trim().isEmpty ?? true ? userEmail : email?.trim();
     await _preferences.persistUserName(userName);
     await _preferences.persistUserEmail(userEmail);
+    notifyListeners();
+  }
+
+  Future<void> updateLastTrackedDuration(Duration duration) async {
+    lastTrackedDuration = duration;
+    await _preferences.persistTimeTrackerDuration(duration);
+    notifyListeners();
+  }
+
+  Future<void> updateLastTrackedTask(String? taskId) async {
+    lastTrackedTaskId = taskId;
+    await _preferences.persistTimeTrackerTask(taskId);
     notifyListeners();
   }
 

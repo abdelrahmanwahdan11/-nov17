@@ -110,6 +110,85 @@ class CatalogItem {
   final double estimatedHours;
 }
 
+class ScheduleEntry {
+  ScheduleEntry({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.start,
+    required this.end,
+    required this.tag,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final DateTime start;
+  final DateTime end;
+  final String tag;
+
+  Duration get duration => end.difference(start);
+
+  ScheduleEntry copyWith({
+    String? title,
+    String? description,
+    DateTime? start,
+    DateTime? end,
+    String? tag,
+  }) {
+    return ScheduleEntry(
+      id: id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      start: start ?? this.start,
+      end: end ?? this.end,
+      tag: tag ?? this.tag,
+    );
+  }
+}
+
+class TemplateItem {
+  TemplateItem({
+    required this.id,
+    required this.title,
+    required this.type,
+    required this.category,
+    required this.summary,
+    required this.estimatedHours,
+    required this.tags,
+    this.popular = false,
+  });
+
+  final String id;
+  final String title;
+  final String type;
+  final String category;
+  final String summary;
+  final double estimatedHours;
+  final List<String> tags;
+  final bool popular;
+}
+
+class LibraryItem {
+  LibraryItem({
+    required this.id,
+    required this.title,
+    required this.type,
+    required this.updatedAt,
+    required this.summary,
+    required this.author,
+    required this.link,
+  });
+
+  final String id;
+  final String title;
+  final String type;
+  final DateTime updatedAt;
+  final String summary;
+  final String author;
+  final String link;
+}
+
 class AppNotification {
   AppNotification({
     required this.id,
@@ -405,6 +484,158 @@ List<AppNotification> seedNotifications() {
       subtitle: 'Najla marked the task as done',
       timestamp: now.subtract(const Duration(days: 2, hours: 5)),
       relatedRoute: 'tasks',
+    ),
+  ];
+}
+
+List<ScheduleEntry> seedSchedule() {
+  final now = DateTime.now();
+  DateTime at(int hour, int minute) => DateTime(now.year, now.month, now.day, hour, minute);
+  return [
+    ScheduleEntry(
+      id: 'schedule-1',
+      title: 'Daily standup',
+      description: 'Sync with the product squad on delivery focus.',
+      start: at(9, 0),
+      end: at(9, 30),
+      tag: 'Team',
+    ),
+    ScheduleEntry(
+      id: 'schedule-2',
+      title: 'Design QA',
+      description: 'Review pastel theming on mobile layouts.',
+      start: at(11, 0),
+      end: at(12, 0),
+      tag: 'Design',
+    ),
+    ScheduleEntry(
+      id: 'schedule-3',
+      title: 'Client onboarding',
+      description: 'Walkthrough of ConnecQ workspace with the new partner.',
+      start: at(14, 30),
+      end: at(15, 30),
+      tag: 'Client',
+    ),
+    ScheduleEntry(
+      id: 'schedule-4',
+      title: 'Focus block',
+      description: 'Heads-down time to craft finance dashboards.',
+      start: at(16, 0),
+      end: at(18, 0),
+      tag: 'Deep Work',
+    ),
+  ];
+}
+
+List<TemplateItem> seedTemplates() {
+  return [
+    TemplateItem(
+      id: 'template-1',
+      title: 'Sales discovery flow',
+      type: 'Sales',
+      category: 'Pipeline',
+      summary: 'Capture discovery notes, qualifying questions, and follow-up tasks in one flow.',
+      estimatedHours: 4,
+      tags: const ['sales', 'crm', 'call scripts'],
+      popular: true,
+    ),
+    TemplateItem(
+      id: 'template-2',
+      title: 'Motion design sprint',
+      type: 'Design',
+      category: 'Creative',
+      summary: 'Storyboard, prototype, and review sequences with daily checkpoints.',
+      estimatedHours: 16,
+      tags: const ['design', 'animation', 'review'],
+    ),
+    TemplateItem(
+      id: 'template-3',
+      title: 'Weekly leadership sync',
+      type: 'Operations',
+      category: 'Meetings',
+      summary: 'Align leadership KPIs, highlight blockers, and document decisions.',
+      estimatedHours: 2,
+      tags: const ['operations', 'leadership', 'agenda'],
+      popular: true,
+    ),
+    TemplateItem(
+      id: 'template-4',
+      title: 'Campaign launch checklist',
+      type: 'Marketing',
+      category: 'Campaigns',
+      summary: 'Plan creative, channels, QA, and post-launch review in pastel clarity.',
+      estimatedHours: 10,
+      tags: const ['marketing', 'campaign', 'qa'],
+    ),
+    TemplateItem(
+      id: 'template-5',
+      title: 'Customer success playbook',
+      type: 'Success',
+      category: 'Customer',
+      summary: 'Document health scoring, renewal prompts, and expansion experiments.',
+      estimatedHours: 6,
+      tags: const ['success', 'renewal', 'playbook'],
+    ),
+    TemplateItem(
+      id: 'template-6',
+      title: 'Product discovery workshop',
+      type: 'Product',
+      category: 'Workshops',
+      summary: 'Facilitate opportunity mapping, research synthesis, and prioritisation.',
+      estimatedHours: 12,
+      tags: const ['product', 'discovery', 'research'],
+      popular: true,
+    ),
+  ];
+}
+
+List<LibraryItem> seedLibraryItems() {
+  final now = DateTime.now();
+  return [
+    LibraryItem(
+      id: 'library-1',
+      title: 'ConnecQ brand deck',
+      type: 'Presentation',
+      updatedAt: now.subtract(const Duration(days: 2)),
+      summary: 'All typography, color, and tone rules for the pastel workspace experience.',
+      author: 'Brand Studio',
+      link: 'https://dribbble.com/shots/12345678',
+    ),
+    LibraryItem(
+      id: 'library-2',
+      title: 'Finance automation SOP',
+      type: 'Document',
+      updatedAt: now.subtract(const Duration(days: 6)),
+      summary: 'Step-by-step automation blueprint for revenue reconciliation.',
+      author: 'Finance Guild',
+      link: 'https://www.notion.so',
+    ),
+    LibraryItem(
+      id: 'library-3',
+      title: 'Motion references board',
+      type: 'Gallery',
+      updatedAt: now.subtract(const Duration(days: 9)),
+      summary: 'A curated board of transitions and timing studies for inspiration.',
+      author: 'Motion Lab',
+      link: 'https://www.behance.net',
+    ),
+    LibraryItem(
+      id: 'library-4',
+      title: 'Enterprise onboarding notes',
+      type: 'Notes',
+      updatedAt: now.subtract(const Duration(days: 1)),
+      summary: 'Highlights from last week’s onboarding including open questions.',
+      author: 'Success Team',
+      link: 'https://miro.com',
+    ),
+    LibraryItem(
+      id: 'library-5',
+      title: 'UX research insights',
+      type: 'Report',
+      updatedAt: now.subtract(const Duration(days: 12)),
+      summary: 'Condensed findings from interviews about the comparison workspace.',
+      author: 'Research Collective',
+      link: 'https://www.figma.com',
     ),
   ];
 }

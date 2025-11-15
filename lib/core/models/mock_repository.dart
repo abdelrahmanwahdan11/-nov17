@@ -16,12 +16,18 @@ class MockRepository {
       : _projects = seedProjects(),
         _tasks = seedTasks(),
         _catalog = seedCatalog(),
-        _notifications = seedNotifications();
+        _notifications = seedNotifications(),
+        _schedule = seedSchedule(),
+        _templates = seedTemplates(),
+        _library = seedLibraryItems();
 
   final List<Project> _projects;
   final List<Task> _tasks;
   final List<CatalogItem> _catalog;
   final List<AppNotification> _notifications;
+  final List<ScheduleEntry> _schedule;
+  final List<TemplateItem> _templates;
+  final List<LibraryItem> _library;
 
   Future<PaginatedResult<Project>> fetchProjects({
     required int page,
@@ -132,7 +138,7 @@ class MockRepository {
   Future<Map<String, List<dynamic>>> search(String query) async {
     await Future<void>.delayed(const Duration(milliseconds: 220));
     if (query.isEmpty) {
-      return {'projects': [], 'tasks': [], 'catalog': []};
+      return {'projects': [], 'tasks': [], 'templates': [], 'catalog': []};
     }
     final lowered = query.toLowerCase();
     return {
@@ -141,6 +147,12 @@ class MockRepository {
           .toList(),
       'tasks': _tasks
           .where((task) => task.title.toLowerCase().contains(lowered) || task.description.toLowerCase().contains(lowered))
+          .toList(),
+      'templates': _templates
+          .where((template) =>
+              template.title.toLowerCase().contains(lowered) ||
+              template.summary.toLowerCase().contains(lowered) ||
+              template.tags.any((tag) => tag.toLowerCase().contains(lowered)))
           .toList(),
       'catalog': _catalog
           .where((item) => item.title.toLowerCase().contains(lowered) || item.summary.toLowerCase().contains(lowered))
@@ -195,4 +207,105 @@ class MockRepository {
   }
 
   List<Task> allTasks() => List.unmodifiable(_tasks);
+
+  Future<List<ScheduleEntry>> fetchSchedule(DateTime date) async {
+    await Future<void>.delayed(const Duration(milliseconds: 220));
+    final entries = _schedule
+        .where((entry) => entry.start.year == date.year && entry.start.month == date.month && entry.start.day == date.day)
+        .toList()
+      ..sort((a, b) => a.start.compareTo(b.start));
+    return entries;
+  }
+
+  Future<ScheduleEntry> addScheduleEntry(ScheduleEntry entry) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    _schedule.add(entry);
+    _schedule.sort((a, b) => a.start.compareTo(b.start));
+    return entry;
+  }
+
+  Future<void> removeScheduleEntry(String id) async {
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    _schedule.removeWhere((entry) => entry.id == id);
+  }
+
+  List<ScheduleEntry> nextScheduleEntries(int limit) {
+    final now = DateTime.now();
+    final upcoming = _schedule.where((entry) => entry.end.isAfter(now)).toList()
+      ..sort((a, b) => a.start.compareTo(b.start));
+    return upcoming.take(limit).toList();
+  }
+
+  Future<PaginatedResult<TemplateItem>> fetchTemplates({
+    required int page,
+    required int pageSize,
+    String type = 'All',
+    String query = '',
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 240));
+    final lowered = query.toLowerCase();
+    final filtered = _templates.where((template) {
+      final typeMatches = type == 'All' || template.type.toLowerCase() == type.toLowerCase();
+      final queryMatches = lowered.isEmpty ||
+          template.title.toLowerCase().contains(lowered) ||
+          template.summary.toLowerCase().contains(lowered) ||
+          template.tags.any((tag) => tag.toLowerCase().contains(lowered));
+      return typeMatches && queryMatches;
+    }).toList();
+    final start = max(0, (page - 1) * pageSize);
+    final end = min(start + pageSize, filtered.length);
+    final slice = start >= filtered.length ? <TemplateItem>[] : filtered.sublist(start, end);
+    final hasMore = end < filtered.length;
+    return PaginatedResult<TemplateItem>(items: slice, total: filtered.length, hasMore: hasMore);
+  }
+
+  List<TemplateItem> popularTemplates({int limit = 3}) {
+    final sorted = List<TemplateItem>.from(_templates)
+      ..sort((a, b) {
+        if (a.popular == b.popular) {
+          return a.title.compareTo(b.title);
+        }
+        return a.popular ? -1 : 1;
+      });
+    return sorted.take(limit).toList();
+  }
+
+  List<String> templateTypes() {
+    final set = _templates.map((template) => template.type).toSet().toList()..sort();
+    return ['All', ...set];
+  }
+
+  Future<PaginatedResult<LibraryItem>> fetchLibrary({
+    required int page,
+    required int pageSize,
+    String type = 'All',
+    String query = '',
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 240));
+    final lowered = query.toLowerCase();
+    final filtered = _library.where((item) {
+      final typeMatches = type == 'All' || item.type.toLowerCase() == type.toLowerCase();
+      final queryMatches = lowered.isEmpty ||
+          item.title.toLowerCase().contains(lowered) ||
+          item.summary.toLowerCase().contains(lowered) ||
+          item.author.toLowerCase().contains(lowered);
+      return typeMatches && queryMatches;
+    }).toList();
+    final start = max(0, (page - 1) * pageSize);
+    final end = min(start + pageSize, filtered.length);
+    final slice = start >= filtered.length ? <LibraryItem>[] : filtered.sublist(start, end);
+    final hasMore = end < filtered.length;
+    return PaginatedResult<LibraryItem>(items: slice, total: filtered.length, hasMore: hasMore);
+  }
+
+  List<LibraryItem> recentLibraryItems({int limit = 3}) {
+    final sorted = List<LibraryItem>.from(_library)
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return sorted.take(limit).toList();
+  }
+
+  List<String> libraryTypes() {
+    final set = _library.map((item) => item.type).toSet().toList()..sort();
+    return ['All', ...set];
+  }
 }

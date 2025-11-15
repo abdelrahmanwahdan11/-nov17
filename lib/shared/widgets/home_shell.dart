@@ -19,8 +19,11 @@ import '../controllers/catalog_controller.dart';
 import '../controllers/compare_controller.dart';
 import '../controllers/notifications_controller.dart';
 import '../controllers/projects_controller.dart';
+import '../controllers/scheduler_controller.dart';
 import '../controllers/tasks_controller.dart';
 import '../controllers/workspace_scope.dart';
+import '../controllers/templates_controller.dart';
+import '../controllers/library_controller.dart';
 import 'app_drawer.dart';
 
 class HomeShell extends StatefulWidget {
@@ -39,6 +42,9 @@ class _HomeShellState extends State<HomeShell> {
   late final TasksController _tasksController;
   late final CatalogController _catalogController;
   late final NotificationsController _notificationsController;
+  late final SchedulerController _schedulerController;
+  late final TemplatesController _templatesController;
+  late final LibraryController _libraryController;
   int _index = 0;
   bool _drawerOpen = false;
 
@@ -52,11 +58,17 @@ class _HomeShellState extends State<HomeShell> {
     _catalogController = CatalogController(repository: _repository, compare: _compareController);
     _notificationsController = NotificationsController(repository: _repository)
       ..addListener(_onNotificationsChanged);
+    _schedulerController = SchedulerController(repository: _repository);
+    _templatesController = TemplatesController(repository: _repository);
+    _libraryController = LibraryController(repository: _repository);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _projectsController.bootstrap();
       _tasksController.bootstrap();
       _catalogController.bootstrap();
       _notificationsController.bootstrap();
+      _schedulerController.bootstrap();
+      _templatesController.bootstrap();
+      _libraryController.bootstrap();
     });
   }
 
@@ -76,6 +88,9 @@ class _HomeShellState extends State<HomeShell> {
     _notificationsController
       ..removeListener(_onNotificationsChanged)
       ..dispose();
+    _schedulerController.dispose();
+    _templatesController.dispose();
+    _libraryController.dispose();
     _compareController.dispose();
     super.dispose();
   }
@@ -150,6 +165,9 @@ class _HomeShellState extends State<HomeShell> {
       catalog: _catalogController,
       compare: _compareController,
       notifications: _notificationsController,
+      scheduler: _schedulerController,
+      templates: _templatesController,
+      library: _libraryController,
       child: Directionality(
         textDirection: widget.controller.locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         child: Scaffold(

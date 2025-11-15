@@ -15,6 +15,8 @@ class AppPreferences {
   static const _localeKey = 'app_language';
   static const _userNameKey = 'user_name';
   static const _userEmailKey = 'user_email';
+  static const _timeTrackerSecondsKey = 'time_tracker_last_seconds';
+  static const _timeTrackerTaskKey = 'time_tracker_last_task';
 
   static Future<AppPreferences> getInstance() async {
     final prefs = await SharedPreferences.getInstance();
@@ -93,6 +95,24 @@ class AppPreferences {
       await _prefs.remove(_userEmailKey);
     } else {
       await _prefs.setString(_userEmailKey, email);
+    }
+  }
+
+  Duration restoreTimeTrackerDuration() {
+    final seconds = _prefs.getInt(_timeTrackerSecondsKey) ?? 0;
+    return Duration(seconds: seconds);
+  }
+
+  Future<void> persistTimeTrackerDuration(Duration duration) =>
+      _prefs.setInt(_timeTrackerSecondsKey, duration.inSeconds);
+
+  String? restoreTimeTrackerTask() => _prefs.getString(_timeTrackerTaskKey);
+
+  Future<void> persistTimeTrackerTask(String? taskId) async {
+    if (taskId == null || taskId.isEmpty) {
+      await _prefs.remove(_timeTrackerTaskKey);
+    } else {
+      await _prefs.setString(_timeTrackerTaskKey, taskId);
     }
   }
 }

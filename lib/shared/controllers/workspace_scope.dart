@@ -6,7 +6,10 @@ import 'catalog_controller.dart';
 import 'compare_controller.dart';
 import 'notifications_controller.dart';
 import 'projects_controller.dart';
+import 'scheduler_controller.dart';
 import 'tasks_controller.dart';
+import 'templates_controller.dart';
+import 'library_controller.dart';
 
 class WorkspaceScope extends InheritedWidget {
   const WorkspaceScope({
@@ -18,6 +21,9 @@ class WorkspaceScope extends InheritedWidget {
     required this.catalog,
     required this.compare,
     required this.notifications,
+    required this.scheduler,
+    required this.templates,
+    required this.library,
     required super.child,
   });
 
@@ -28,6 +34,9 @@ class WorkspaceScope extends InheritedWidget {
   final CatalogController catalog;
   final CompareController compare;
   final NotificationsController notifications;
+  final SchedulerController scheduler;
+  final TemplatesController templates;
+  final LibraryController library;
 
   static WorkspaceScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<WorkspaceScope>();
