@@ -22,6 +22,7 @@ class AppController extends ChangeNotifier {
   Duration lastTrackedDuration = Duration.zero;
   String? lastTrackedTaskId;
   List<TrackedSession> _trackedSessions = const [];
+  List<String> _searchHistory = const [];
 
   String get initialRoute {
     if (!onboardingSeen) {
@@ -34,6 +35,8 @@ class AppController extends ChangeNotifier {
   }
 
   List<TrackedSession> get trackedSessions => List.unmodifiable(_trackedSessions);
+
+  List<String> get searchHistory => List.unmodifiable(_searchHistory);
 
   TrackedSession? get lastTrackedSession => _trackedSessions.isEmpty ? null : _trackedSessions.first;
 
@@ -79,6 +82,7 @@ class AppController extends ChangeNotifier {
     lastTrackedDuration = _preferences.restoreTimeTrackerDuration();
     lastTrackedTaskId = _preferences.restoreTimeTrackerTask();
     _trackedSessions = _preferences.restoreTimeTrackerHistory();
+    _searchHistory = List<String>.from(_preferences.restoreSearchHistory());
     notifyListeners();
   }
 
@@ -150,4 +154,37 @@ class AppController extends ChangeNotifier {
   String get displayName => (userName == null || userName!.isEmpty) ? 'Alya Hassan' : userName!;
 
   String get displayEmail => (userEmail == null || userEmail!.isEmpty) ? 'alya@connecq.app' : userEmail!;
+
+  Future<void> addSearchHistory(String query) async {
+    final sanitized = query.trim();
+    if (sanitized.isEmpty) {
+      return;
+    }
+    final lower = sanitized.toLowerCase();
+    final filtered = _searchHistory.where((item) => item.toLowerCase() != lower).toList(growable: false);
+    final updated = [sanitized, ...filtered];
+    _searchHistory = updated.length > 10 ? updated.take(10).toList(growable: false) : updated;
+    await _preferences.persistSearchHistory(_searchHistory);
+    notifyListeners();
+  }
+
+  Future<void> removeSearchHistory(String query) async {
+    final lower = query.toLowerCase();
+    final updated = _searchHistory.where((item) => item.toLowerCase() != lower).toList(growable: false);
+    if (updated.length == _searchHistory.length) {
+      return;
+    }
+    _searchHistory = updated;
+    await _preferences.persistSearchHistory(_searchHistory);
+    notifyListeners();
+  }
+
+  Future<void> clearSearchHistory() async {
+    if (_searchHistory.isEmpty) {
+      return;
+    }
+    _searchHistory = const [];
+    await _preferences.persistSearchHistory(_searchHistory);
+    notifyListeners();
+  }
 }

@@ -20,6 +20,7 @@ class AppPreferences {
   static const _timeTrackerSecondsKey = 'time_tracker_last_seconds';
   static const _timeTrackerTaskKey = 'time_tracker_last_task';
   static const _timeTrackerHistoryKey = 'time_tracker_history';
+  static const _searchHistoryKey = 'search_history';
 
   static Future<AppPreferences> getInstance() async {
     final prefs = await SharedPreferences.getInstance();
@@ -130,5 +131,21 @@ class AppPreferences {
   Future<void> persistTimeTrackerHistory(List<TrackedSession> sessions) async {
     final encoded = sessions.map((session) => session.encode()).toList(growable: false);
     await _prefs.setStringList(_timeTrackerHistoryKey, encoded);
+  }
+
+  List<String> restoreSearchHistory() {
+    final values = _prefs.getStringList(_searchHistoryKey);
+    if (values == null) {
+      return const [];
+    }
+    return List.unmodifiable(values);
+  }
+
+  Future<void> persistSearchHistory(List<String> history) async {
+    if (history.isEmpty) {
+      await _prefs.remove(_searchHistoryKey);
+    } else {
+      await _prefs.setStringList(_searchHistoryKey, history);
+    }
   }
 }
