@@ -16,6 +16,8 @@ class AppController extends ChangeNotifier {
   Color primaryColor = const Color(0xFFD9E272);
   bool onboardingSeen = false;
   bool isLoggedIn = false;
+  String? userName;
+  String? userEmail;
 
   String get initialRoute {
     if (!onboardingSeen) {
@@ -33,6 +35,8 @@ class AppController extends ChangeNotifier {
     locale = _preferences.restoreLocale(locale);
     onboardingSeen = _preferences.restoreOnboardingSeen();
     isLoggedIn = _preferences.restoreIsLoggedIn();
+    userName = _preferences.restoreUserName();
+    userEmail = _preferences.restoreUserEmail();
     notifyListeners();
   }
 
@@ -65,4 +69,16 @@ class AppController extends ChangeNotifier {
     await _preferences.persistPrimaryColor(color);
     notifyListeners();
   }
+
+  Future<void> updateUserProfile({String? name, String? email}) async {
+    userName = name?.trim().isEmpty ?? true ? userName : name?.trim();
+    userEmail = email?.trim().isEmpty ?? true ? userEmail : email?.trim();
+    await _preferences.persistUserName(userName);
+    await _preferences.persistUserEmail(userEmail);
+    notifyListeners();
+  }
+
+  String get displayName => (userName == null || userName!.isEmpty) ? 'Alya Hassan' : userName!;
+
+  String get displayEmail => (userEmail == null || userEmail!.isEmpty) ? 'alya@connecq.app' : userEmail!;
 }

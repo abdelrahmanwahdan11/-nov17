@@ -19,18 +19,18 @@ class _OnboardingStoryScreenState extends State<OnboardingStoryScreen> {
 
   final _slides = const [
     _OnboardingSlide(
-      title: 'Organize your work beautifully',
-      description: 'Stay in control of projects, tasks and resources in a single flow.',
+      titleKey: 'onboarding_title_1',
+      descriptionKey: 'onboarding_desc_1',
       image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=80',
     ),
     _OnboardingSlide(
-      title: 'Collaborate in pastel calm',
-      description: 'Share progress with your team in a soft, minimal dashboard.',
+      titleKey: 'onboarding_title_2',
+      descriptionKey: 'onboarding_desc_2',
       image: 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=900&q=80',
     ),
     _OnboardingSlide(
-      title: 'Plan smarter with ConnecQ',
-      description: 'Track time, finances and catalog assets without friction.',
+      titleKey: 'onboarding_title_3',
+      descriptionKey: 'onboarding_desc_3',
       image: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=900&q=80',
     ),
   ];
@@ -94,9 +94,12 @@ class _OnboardingStoryScreenState extends State<OnboardingStoryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(slide.title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          loc.translate(slide.titleKey),
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 12),
-                        Text(slide.description, style: Theme.of(context).textTheme.bodyLarge),
+                        Text(loc.translate(slide.descriptionKey), style: Theme.of(context).textTheme.bodyLarge),
                       ],
                     ),
                   ),
@@ -143,9 +146,9 @@ class _OnboardingStoryScreenState extends State<OnboardingStoryScreen> {
 }
 
 class _OnboardingSlide {
-  const _OnboardingSlide({required this.title, required this.description, required this.image});
+  const _OnboardingSlide({required this.titleKey, required this.descriptionKey, required this.image});
 
-  final String title;
-  final String description;
+  final String titleKey;
+  final String descriptionKey;
   final String image;
 }

@@ -41,6 +41,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
+      await widget.controller.updateUserProfile(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+      );
       await widget.controller.updateLoginState(true);
       if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (route) => false);
@@ -60,14 +64,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Full name'),
-                validator: (value) => value != null && value.isNotEmpty ? null : 'Required',
+                decoration: InputDecoration(labelText: loc.translate('full_name')),
+                validator: (value) => value != null && value.isNotEmpty
+                    ? null
+                    : loc.translate('required_field'),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
-                decoration: InputDecoration(labelText: loc.translate('email')),
-                validator: (value) => value != null && value.contains('@') ? null : 'Invalid email',
+                decoration: InputDecoration(labelText: loc.translate('email_address')),
+                validator: (value) => value != null && value.contains('@')
+                    ? null
+                    : loc.translate('invalid_email'),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -78,16 +86,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 obscureText: _obscure,
                 onChanged: _onPasswordChanged,
-                validator: (value) => value != null && value.length >= 6 ? null : 'Too short',
+                validator: (value) => value != null && value.length >= 6
+                    ? null
+                    : loc.translate('password_too_short'),
               ),
               const SizedBox(height: 12),
               LinearProgressIndicator(value: _strength == 0 ? null : _strength),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _confirmController,
-                decoration: const InputDecoration(labelText: 'Confirm password'),
+                decoration: InputDecoration(labelText: loc.translate('confirm_password')),
                 obscureText: _obscure,
-                validator: (value) => value == _passwordController.text ? null : 'Password mismatch',
+                validator: (value) => value == _passwordController.text
+                    ? null
+                    : loc.translate('password_mismatch'),
               ),
               const SizedBox(height: 24),
               FilledButton(onPressed: _submit, child: Text(loc.translate('register'))),

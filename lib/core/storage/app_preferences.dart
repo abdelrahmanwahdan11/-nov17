@@ -13,6 +13,8 @@ class AppPreferences {
   static const _themeModeKey = 'theme_mode';
   static const _primaryColorKey = 'primary_color_hex';
   static const _localeKey = 'app_language';
+  static const _userNameKey = 'user_name';
+  static const _userEmailKey = 'user_email';
 
   static Future<AppPreferences> getInstance() async {
     final prefs = await SharedPreferences.getInstance();
@@ -73,4 +75,24 @@ class AppPreferences {
         _localeKey,
         locale.languageCode,
       );
+
+  String? restoreUserName() => _prefs.getString(_userNameKey);
+
+  Future<void> persistUserName(String? name) async {
+    if (name == null) {
+      await _prefs.remove(_userNameKey);
+    } else {
+      await _prefs.setString(_userNameKey, name);
+    }
+  }
+
+  String? restoreUserEmail() => _prefs.getString(_userEmailKey);
+
+  Future<void> persistUserEmail(String? email) async {
+    if (email == null) {
+      await _prefs.remove(_userEmailKey);
+    } else {
+      await _prefs.setString(_userEmailKey, email);
+    }
+  }
 }

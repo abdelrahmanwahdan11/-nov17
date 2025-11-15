@@ -21,6 +21,8 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final userName = controller.displayName;
+    final email = controller.displayEmail;
     final icons = const [
       IconlyBold.category,
       IconlyBold.work,
@@ -44,10 +46,9 @@ class AppDrawer extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                     radius: 28,
-                    backgroundImage: const NetworkImage('https://i.pravatar.cc/150?img=8'),
-                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=8'),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -55,14 +56,18 @@ class AppDrawer extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Alya Hassan',
+                          userName,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                         ),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
-                            Text(
-                              'alya@connecq.app',
-                              style: Theme.of(context).textTheme.bodySmall,
+                            Expanded(
+                              child: Text(
+                                email,
+                                style: Theme.of(context).textTheme.bodySmall,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Container(
@@ -74,6 +79,11 @@ class AppDrawer extends StatelessWidget {
                               child: Text(controller.locale.languageCode.toUpperCase()),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          loc.translate('profile_trial', params: {'days': '12'}),
+                          style: Theme.of(context).textTheme.labelSmall,
                         ),
                       ],
                     ),

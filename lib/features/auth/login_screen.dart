@@ -38,17 +38,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
+      await widget.controller.updateUserProfile(email: _emailController.text.trim());
       await widget.controller.updateLoginState(true);
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     }
   }
 
-  Future<void> _loginAsGuest() => widget.controller.updateLoginState(true).then((_) {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.home);
-        }
-      });
+  Future<void> _loginAsGuest() async {
+    await widget.controller.updateUserProfile(name: 'Guest', email: 'guest@connecq.app');
+    await widget.controller.updateLoginState(true);
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,8 +77,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
                       TextFormField(
                         controller: _emailController,
-                        decoration: InputDecoration(labelText: loc.translate('email')),
-                        validator: (value) => value != null && value.contains('@') ? null : 'Invalid email',
+                        decoration: InputDecoration(labelText: loc.translate('email_address')),
+                        validator: (value) => value != null && value.contains('@')
+                            ? null
+                            : loc.translate('invalid_email'),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -87,7 +91,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         obscureText: _obscure,
                         onChanged: _onPasswordChanged,
-                        validator: (value) => value != null && value.length >= 6 ? null : 'Too short',
+                        validator: (value) => value != null && value.length >= 6
+                            ? null
+                            : loc.translate('password_too_short'),
                       ),
                       const SizedBox(height: 12),
                       LinearProgressIndicator(value: _strength == 0 ? null : _strength),

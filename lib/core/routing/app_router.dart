@@ -23,6 +23,7 @@ import '../../features/tools/library_screen.dart';
 import '../../features/tools/scheduler_screen.dart';
 import '../../features/tools/templates_screen.dart';
 import '../../features/tools/tools_screen.dart';
+import '../models/mock_data.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -48,7 +49,7 @@ class AppRouter {
       case AppRoutes.projects:
         return _material(settings, const ProjectsScreen());
       case AppRoutes.projectDetails:
-        return _material(settings, ProjectDetailsScreen(project: settings.arguments as dynamic));
+        return _material(settings, ProjectDetailsScreen(project: settings.arguments as Project));
       case AppRoutes.tasks:
         return _material(settings, const TasksScreen());
       case AppRoutes.taskDetails:
