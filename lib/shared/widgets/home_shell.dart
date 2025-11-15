@@ -24,6 +24,7 @@ import '../controllers/tasks_controller.dart';
 import '../controllers/workspace_scope.dart';
 import '../controllers/templates_controller.dart';
 import '../controllers/library_controller.dart';
+import '../controllers/finance_controller.dart';
 import 'app_drawer.dart';
 
 class HomeShell extends StatefulWidget {
@@ -45,6 +46,7 @@ class _HomeShellState extends State<HomeShell> {
   late final SchedulerController _schedulerController;
   late final TemplatesController _templatesController;
   late final LibraryController _libraryController;
+  late final FinanceController _financeController;
   int _index = 0;
   bool _drawerOpen = false;
 
@@ -61,6 +63,7 @@ class _HomeShellState extends State<HomeShell> {
     _schedulerController = SchedulerController(repository: _repository);
     _templatesController = TemplatesController(repository: _repository);
     _libraryController = LibraryController(repository: _repository);
+    _financeController = FinanceController(repository: _repository);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _projectsController.bootstrap();
       _tasksController.bootstrap();
@@ -69,6 +72,7 @@ class _HomeShellState extends State<HomeShell> {
       _schedulerController.bootstrap();
       _templatesController.bootstrap();
       _libraryController.bootstrap();
+      _financeController.bootstrap();
     });
   }
 
@@ -91,6 +95,7 @@ class _HomeShellState extends State<HomeShell> {
     _schedulerController.dispose();
     _templatesController.dispose();
     _libraryController.dispose();
+    _financeController.dispose();
     _compareController.dispose();
     super.dispose();
   }
@@ -168,6 +173,7 @@ class _HomeShellState extends State<HomeShell> {
       scheduler: _schedulerController,
       templates: _templatesController,
       library: _libraryController,
+      finance: _financeController,
       child: Directionality(
         textDirection: widget.controller.locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         child: Scaffold(

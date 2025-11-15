@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'mock_data.dart';
 
+enum FinancePeriod { monthly, yearly }
+
 class PaginatedResult<T> {
   PaginatedResult({required this.items, required this.total, required this.hasMore});
 
@@ -19,7 +21,10 @@ class MockRepository {
         _notifications = seedNotifications(),
         _schedule = seedSchedule(),
         _templates = seedTemplates(),
-        _library = seedLibraryItems();
+        _library = seedLibraryItems(),
+        _financeMonthly = seedFinanceSnapshotsMonthly(),
+        _financeYearly = seedFinanceSnapshotsYearly(),
+        _invoices = seedInvoices();
 
   final List<Project> _projects;
   final List<Task> _tasks;
@@ -28,6 +33,9 @@ class MockRepository {
   final List<ScheduleEntry> _schedule;
   final List<TemplateItem> _templates;
   final List<LibraryItem> _library;
+  final List<FinanceSnapshot> _financeMonthly;
+  final List<FinanceSnapshot> _financeYearly;
+  final List<Invoice> _invoices;
 
   Future<PaginatedResult<Project>> fetchProjects({
     required int page,
@@ -307,5 +315,79 @@ class MockRepository {
   List<String> libraryTypes() {
     final set = _library.map((item) => item.type).toSet().toList()..sort();
     return ['All', ...set];
+  }
+
+  Future<List<FinanceSnapshot>> fetchFinanceSnapshots({FinancePeriod period = FinancePeriod.monthly}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 240));
+    final source = period == FinancePeriod.monthly ? _financeMonthly : _financeYearly;
+    return List<FinanceSnapshot>.from(source);
+  }
+
+  Future<PaginatedResult<Invoice>> fetchInvoices({
+    required int page,
+    required int pageSize,
+    String status = 'All',
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 220));
+    final now = DateTime.now();
+    bool matchesStatus(Invoice invoice) {
+      final lowered = status.toLowerCase();
+      switch (lowered) {
+        case 'due':
+          return invoice.status.toLowerCase() == 'due' && !invoice.isOverdue(now);
+        case 'overdue':
+          return invoice.isOverdue(now);
+        case 'paid':
+          return invoice.status.toLowerCase() == 'paid';
+        default:
+          return true;
+      }
+    }
+
+    final filtered = _invoices.where(matchesStatus).toList()
+      ..sort((a, b) {
+        final aPaid = a.status.toLowerCase() == 'paid';
+        final bPaid = b.status.toLowerCase() == 'paid';
+        if (aPaid != bPaid) {
+          return aPaid ? 1 : -1;
+        }
+        return a.dueDate.compareTo(b.dueDate);
+      });
+
+    final start = max(0, (page - 1) * pageSize);
+    final end = min(start + pageSize, filtered.length);
+    final slice = start >= filtered.length ? <Invoice>[] : filtered.sublist(start, end);
+    final hasMore = end < filtered.length;
+    return PaginatedResult<Invoice>(items: slice, total: filtered.length, hasMore: hasMore);
+  }
+
+  Future<Invoice?> saveInvoice(Invoice invoice) async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    final index = _invoices.indexWhere((item) => item.id == invoice.id);
+    if (index == -1) return null;
+    _invoices[index] = invoice;
+    return invoice;
+  }
+
+  List<Invoice> upcomingInvoices({int limit = 3}) {
+    final now = DateTime.now();
+    final upcoming = _invoices
+        .where((invoice) => !invoice.isOverdue(now) && invoice.status.toLowerCase() != 'paid')
+        .toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    return upcoming.take(limit).toList();
+  }
+
+  List<Invoice> overdueInvoices({int limit = 3}) {
+    final now = DateTime.now();
+    final overdue = _invoices.where((invoice) => invoice.isOverdue(now)).toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    return overdue.take(limit).toList();
+  }
+
+  double totalOutstandingInvoices() {
+    return _invoices
+        .where((invoice) => invoice.status.toLowerCase() != 'paid')
+        .fold(0, (sum, invoice) => sum + invoice.amount);
   }
 }

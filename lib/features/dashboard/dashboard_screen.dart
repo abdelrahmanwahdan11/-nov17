@@ -145,51 +145,101 @@ class _PaymentSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final bars = [72, 54, 88, 63];
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(32),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(loc.translate('payment_summary'), style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          Row(
+    final finance = WorkspaceScope.of(context).finance;
+    return AnimatedBuilder(
+      animation: finance,
+      builder: (context, _) {
+        final monthly = finance.monthlySnapshots.isEmpty
+            ? <FinanceSnapshot>[]
+            : finance.monthlySnapshots.reversed.take(4).toList().reversed.toList();
+        final isLoading = finance.isLoading && monthly.isEmpty;
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final maxRevenue = monthly.fold<double>(0, (value, item) => value > item.revenue ? value : item.revenue);
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  children: List.generate(bars.length, (index) {
-                    final height = bars[index].toDouble();
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 400),
-                        height: 8 + height,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.35 + index * 0.12),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
+              Text(loc.translate('payment_summary'), style: theme.textTheme.titleLarge),
+              const SizedBox(height: 16),
+              if (isLoading)
+                const SkeletonContainer(height: 120)
+              else if (monthly.isEmpty)
+                Text(loc.translate('finance_invoices_empty'), style: theme.textTheme.bodySmall)
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: monthly.map((snapshot) {
+                          final heightFactor = maxRevenue == 0 ? 0 : snapshot.revenue / maxRevenue;
+                          final expensesFactor = maxRevenue == 0 ? 0 : snapshot.expenses / maxRevenue;
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Stack(
+                                    alignment: Alignment.bottomCenter,
+                                    children: [
+                                      AnimatedContainer(
+                                        duration: const Duration(milliseconds: 400),
+                                        height: 40 + 80 * heightFactor,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(18),
+                                          color: colorScheme.primary.withOpacity(0.4),
+                                        ),
+                                      ),
+                                      AnimatedContainer(
+                                        duration: const Duration(milliseconds: 400),
+                                        height: 40 + 80 * expensesFactor,
+                                        margin: const EdgeInsets.only(bottom: 6),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(18),
+                                          color: const Color(0xFFF7FF5A).withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(snapshot.label, style: theme.textTheme.bodySmall),
+                                  Text('\$${snapshot.revenue.toStringAsFixed(0)}', style: theme.textTheme.labelSmall),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  }),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _Legend(color: colorScheme.primary, label: loc.translate('finance_bar_revenue')),
+                        _Legend(color: const Color(0xFFF7FF5A), label: loc.translate('finance_bar_expenses')),
+                        const SizedBox(height: 12),
+                        Text(
+                          loc.translate('finance_dashboard_outstanding',
+                              params: {'amount': finance.totalOutstanding.toStringAsFixed(0)}),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Legend(color: const Color(0xFFF7FF5A), label: loc.translate('payment_invoices')),
-                  _Legend(color: const Color(0xFFD9E272), label: loc.translate('payment_subscriptions')),
-                ],
-              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

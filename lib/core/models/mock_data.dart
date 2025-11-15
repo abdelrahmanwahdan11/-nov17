@@ -169,6 +169,88 @@ class TemplateItem {
   final bool popular;
 }
 
+class FinanceSnapshot {
+  FinanceSnapshot({
+    required this.id,
+    required this.label,
+    required this.period,
+    required this.revenue,
+    required this.expenses,
+    required this.goal,
+    required this.trend,
+  });
+
+  final String id;
+  final String label;
+  final DateTime period;
+  final double revenue;
+  final double expenses;
+  final double goal;
+  final double trend;
+
+  double get net => revenue - expenses;
+  double get progress => goal == 0 ? 0 : (revenue / goal).clamp(0, 1);
+
+  FinanceSnapshot copyWith({
+    String? label,
+    DateTime? period,
+    double? revenue,
+    double? expenses,
+    double? goal,
+    double? trend,
+  }) {
+    return FinanceSnapshot(
+      id: id,
+      label: label ?? this.label,
+      period: period ?? this.period,
+      revenue: revenue ?? this.revenue,
+      expenses: expenses ?? this.expenses,
+      goal: goal ?? this.goal,
+      trend: trend ?? this.trend,
+    );
+  }
+}
+
+class Invoice {
+  Invoice({
+    required this.id,
+    required this.client,
+    required this.title,
+    required this.amount,
+    required this.dueDate,
+    required this.status,
+  });
+
+  final String id;
+  final String client;
+  final String title;
+  final double amount;
+  final DateTime dueDate;
+  final String status;
+
+  bool isOverdue([DateTime? reference]) {
+    final check = reference ?? DateTime.now();
+    return dueDate.isBefore(check) && status.toLowerCase() != 'paid';
+  }
+
+  Invoice copyWith({
+    String? client,
+    String? title,
+    double? amount,
+    DateTime? dueDate,
+    String? status,
+  }) {
+    return Invoice(
+      id: id,
+      client: client ?? this.client,
+      title: title ?? this.title,
+      amount: amount ?? this.amount,
+      dueDate: dueDate ?? this.dueDate,
+      status: status ?? this.status,
+    );
+  }
+}
+
 class LibraryItem {
   LibraryItem({
     required this.id,
@@ -636,6 +718,135 @@ List<LibraryItem> seedLibraryItems() {
       summary: 'Condensed findings from interviews about the comparison workspace.',
       author: 'Research Collective',
       link: 'https://www.figma.com',
+    ),
+  ];
+}
+
+List<FinanceSnapshot> seedFinanceSnapshotsMonthly() {
+  final now = DateTime.now();
+  final months = [
+    {'offset': -3, 'label': 'February', 'revenue': 38600.0, 'expenses': 17200.0, 'goal': 42000.0, 'trend': 0.08},
+    {'offset': -2, 'label': 'March', 'revenue': 41850.0, 'expenses': 18500.0, 'goal': 45000.0, 'trend': 0.11},
+    {'offset': -1, 'label': 'April', 'revenue': 44720.0, 'expenses': 19120.0, 'goal': 47000.0, 'trend': 0.07},
+    {'offset': 0, 'label': 'May', 'revenue': 46890.0, 'expenses': 20310.0, 'goal': 50000.0, 'trend': 0.05},
+    {'offset': 1, 'label': 'June', 'revenue': 49240.0, 'expenses': 21440.0, 'goal': 52000.0, 'trend': 0.06},
+    {'offset': 2, 'label': 'July', 'revenue': 51580.0, 'expenses': 22360.0, 'goal': 54000.0, 'trend': 0.04},
+  ];
+  return List.generate(months.length, (index) {
+    final entry = months[index];
+    final offset = entry['offset'] as int;
+    final label = entry['label'] as String;
+    final revenue = entry['revenue'] as double;
+    final expenses = entry['expenses'] as double;
+    final goal = entry['goal'] as double;
+    final trend = entry['trend'] as double;
+    final period = DateTime(now.year, now.month + offset, 1);
+    return FinanceSnapshot(
+      id: 'finance-month-$index',
+      label: label,
+      period: period,
+      revenue: revenue,
+      expenses: expenses,
+      goal: goal,
+      trend: trend,
+    );
+  });
+}
+
+List<FinanceSnapshot> seedFinanceSnapshotsYearly() {
+  final now = DateTime.now();
+  final years = [
+    {'offset': -2, 'label': '${now.year - 2}', 'revenue': 452000.0, 'expenses': 238400.0, 'goal': 420000.0, 'trend': 0.18},
+    {'offset': -1, 'label': '${now.year - 1}', 'revenue': 489000.0, 'expenses': 251600.0, 'goal': 460000.0, 'trend': 0.14},
+    {'offset': 0, 'label': '${now.year}', 'revenue': 164500.0, 'expenses': 81200.0, 'goal': 520000.0, 'trend': 0.09},
+  ];
+  return List.generate(years.length, (index) {
+    final entry = years[index];
+    final offset = entry['offset'] as int;
+    final label = entry['label'] as String;
+    final revenue = entry['revenue'] as double;
+    final expenses = entry['expenses'] as double;
+    final goal = entry['goal'] as double;
+    final trend = entry['trend'] as double;
+    final year = now.year + offset;
+    return FinanceSnapshot(
+      id: 'finance-year-$index',
+      label: label,
+      period: DateTime(year, 1, 1),
+      revenue: revenue,
+      expenses: expenses,
+      goal: goal,
+      trend: trend,
+    );
+  });
+}
+
+List<Invoice> seedInvoices() {
+  final now = DateTime.now();
+  return [
+    Invoice(
+      id: 'invoice-001',
+      client: 'Aurora Ventures',
+      title: 'Discovery sprint retainer',
+      amount: 8400,
+      dueDate: now.add(const Duration(days: 5)),
+      status: 'Due',
+    ),
+    Invoice(
+      id: 'invoice-002',
+      client: 'Nebula Labs',
+      title: 'Product strategy workshop',
+      amount: 12200,
+      dueDate: now.add(const Duration(days: 12)),
+      status: 'Due',
+    ),
+    Invoice(
+      id: 'invoice-003',
+      client: 'Softline Co.',
+      title: 'Time tracker integration',
+      amount: 9700,
+      dueDate: now.subtract(const Duration(days: 3)),
+      status: 'Due',
+    ),
+    Invoice(
+      id: 'invoice-004',
+      client: 'Brightline Studio',
+      title: 'Brand refresh phase 2',
+      amount: 15400,
+      dueDate: now.add(const Duration(days: 21)),
+      status: 'Due',
+    ),
+    Invoice(
+      id: 'invoice-005',
+      client: 'Atlas Fintech',
+      title: 'Finance automation playbook',
+      amount: 6800,
+      dueDate: now.subtract(const Duration(days: 11)),
+      status: 'Due',
+    ),
+    Invoice(
+      id: 'invoice-006',
+      client: 'Merge Collective',
+      title: 'Operations enablement kit',
+      amount: 5400,
+      dueDate: now.add(const Duration(days: 2)),
+      status: 'Due',
+    ),
+    Invoice(
+      id: 'invoice-007',
+      client: 'Skyline Retail',
+      title: 'Catalog optimisation audit',
+      amount: 7600,
+      dueDate: now.subtract(const Duration(days: 18)),
+      status: 'Paid',
+    ),
+    Invoice(
+      id: 'invoice-008',
+      client: 'Northshore Bank',
+      title: 'Executive dashboard build',
+      amount: 18800,
+      dueDate: now.add(const Duration(days: 32)),
+      status: 'Due',
     ),
   ];
 }
