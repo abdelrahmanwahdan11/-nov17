@@ -117,6 +117,7 @@ class AppNotification {
     required this.subtitle,
     required this.timestamp,
     this.read = false,
+    this.pinned = false,
     this.relatedRoute,
   });
 
@@ -125,7 +126,27 @@ class AppNotification {
   final String subtitle;
   final DateTime timestamp;
   final bool read;
+  final bool pinned;
   final String? relatedRoute;
+
+  AppNotification copyWith({
+    String? title,
+    String? subtitle,
+    DateTime? timestamp,
+    bool? read,
+    bool? pinned,
+    String? relatedRoute,
+  }) {
+    return AppNotification(
+      id: id,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      timestamp: timestamp ?? this.timestamp,
+      read: read ?? this.read,
+      pinned: pinned ?? this.pinned,
+      relatedRoute: relatedRoute ?? this.relatedRoute,
+    );
+  }
 }
 
 final _random = Random(7);
@@ -360,6 +381,7 @@ List<AppNotification> seedNotifications() {
       title: 'CRM Integration updated',
       subtitle: 'New milestone added to sprint backlog',
       timestamp: now.subtract(const Duration(minutes: 12)),
+      pinned: true,
       relatedRoute: 'projects',
     ),
     AppNotification(
@@ -367,6 +389,7 @@ List<AppNotification> seedNotifications() {
       title: 'Finance goal reached 72%',
       subtitle: 'Revenue is tracking ahead of forecast',
       timestamp: now.subtract(const Duration(hours: 2)),
+      pinned: true,
       relatedRoute: 'finance',
     ),
     AppNotification(

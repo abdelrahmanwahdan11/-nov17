@@ -17,6 +17,7 @@ import '../../features/notifications/notifications_screen.dart';
 import '../controllers/app_controller.dart';
 import '../controllers/catalog_controller.dart';
 import '../controllers/compare_controller.dart';
+import '../controllers/notifications_controller.dart';
 import '../controllers/projects_controller.dart';
 import '../controllers/tasks_controller.dart';
 import '../controllers/workspace_scope.dart';
@@ -37,6 +38,7 @@ class _HomeShellState extends State<HomeShell> {
   late final ProjectsController _projectsController;
   late final TasksController _tasksController;
   late final CatalogController _catalogController;
+  late final NotificationsController _notificationsController;
   int _index = 0;
   bool _drawerOpen = false;
 
@@ -48,10 +50,13 @@ class _HomeShellState extends State<HomeShell> {
     _projectsController = ProjectsController(repository: _repository, compare: _compareController);
     _tasksController = TasksController(repository: _repository, compare: _compareController);
     _catalogController = CatalogController(repository: _repository, compare: _compareController);
+    _notificationsController = NotificationsController(repository: _repository)
+      ..addListener(_onNotificationsChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _projectsController.bootstrap();
       _tasksController.bootstrap();
       _catalogController.bootstrap();
+      _notificationsController.bootstrap();
     });
   }
 
@@ -68,8 +73,24 @@ class _HomeShellState extends State<HomeShell> {
     _projectsController.dispose();
     _tasksController.dispose();
     _catalogController.dispose();
+    _notificationsController
+      ..removeListener(_onNotificationsChanged)
+      ..dispose();
     _compareController.dispose();
     super.dispose();
+  }
+
+  void _onNotificationsChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _openNotifications() {
+    setState(() {
+      _index = 9;
+      _drawerOpen = false;
+    });
   }
 
   Widget _buildPage(int index) {
@@ -103,6 +124,10 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final unreadCount = _notificationsController.unreadCount;
+    final notificationsTitle = unreadCount > 0
+        ? loc.translate('notifications_with_count', params: {'count': unreadCount.toString().padLeft(2, '0')})
+        : loc.translate('notifications');
     final titles = [
       loc.translate('dashboard'),
       loc.translate('projects'),
@@ -113,7 +138,7 @@ class _HomeShellState extends State<HomeShell> {
       loc.translate('catalog'),
       loc.translate('compare'),
       loc.translate('search'),
-      loc.translate('notifications'),
+      notificationsTitle,
       loc.translate('settings'),
     ];
 
@@ -124,6 +149,7 @@ class _HomeShellState extends State<HomeShell> {
       tasks: _tasksController,
       catalog: _catalogController,
       compare: _compareController,
+      notifications: _notificationsController,
       child: Directionality(
         textDirection: widget.controller.locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         child: Scaffold(
@@ -157,6 +183,34 @@ class _HomeShellState extends State<HomeShell> {
               IconButton(
                 onPressed: () => Navigator.pushNamed(context, AppRoutes.search),
                 icon: const Icon(Icons.search),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      onPressed: _openNotifications,
+                      icon: const Icon(Icons.notifications_rounded),
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: 10,
+                        top: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            unreadCount.toString(),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.black87),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),

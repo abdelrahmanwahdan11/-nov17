@@ -95,7 +95,38 @@ class MockRepository {
 
   Future<List<AppNotification>> fetchNotifications() async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
-    return _notifications;
+    final notifications = List<AppNotification>.from(_notifications)
+      ..sort((a, b) {
+        if (a.pinned != b.pinned) {
+          return a.pinned ? -1 : 1;
+        }
+        return b.timestamp.compareTo(a.timestamp);
+      });
+    return notifications;
+  }
+
+  Future<AppNotification?> saveNotification(AppNotification updated) async {
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    final index = _notifications.indexWhere((item) => item.id == updated.id);
+    if (index == -1) return null;
+    _notifications[index] = updated;
+    return updated;
+  }
+
+  Future<List<AppNotification>> markAllNotificationsRead() async {
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    for (var i = 0; i < _notifications.length; i++) {
+      final current = _notifications[i];
+      if (!current.read) {
+        _notifications[i] = current.copyWith(read: true);
+      }
+    }
+    return fetchNotifications();
+  }
+
+  Future<void> clearNotifications() async {
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    _notifications.clear();
   }
 
   Future<Map<String, List<dynamic>>> search(String query) async {
