@@ -16,6 +16,7 @@ import '../../features/projects/project_details_screen.dart';
 import '../../features/projects/projects_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/settings/goals_screen.dart';
 import '../../features/tasks/task_details_screen.dart';
 import '../../features/tasks/tasks_screen.dart';
 import '../../features/time_tracker/time_tracker_screen.dart';
@@ -77,6 +78,8 @@ class AppRouter {
         return _material(settings, const SearchScreen());
       case AppRoutes.settings:
         return _material(settings, SettingsScreen(controller: controller));
+      case AppRoutes.goals:
+        return _material(settings, const GoalsScreen());
       case AppRoutes.notifications:
         return _material(settings, const NotificationsScreen());
       case AppRoutes.timeTracker:

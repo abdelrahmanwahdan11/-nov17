@@ -14,7 +14,8 @@ class ToolsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = WorkspaceScope.of(context);
-    final listenable = Listenable.merge([scope.scheduler, scope.templates, scope.library, scope.app, scope.insights]);
+    final listenable =
+        Listenable.merge([scope.scheduler, scope.templates, scope.library, scope.app, scope.insights, scope.goals]);
     final loc = AppLocalizations.of(context);
 
     return ListView(
@@ -66,6 +67,16 @@ class ToolsScreen extends StatelessWidget {
                   'week': formattedWeek,
                 },
               );
+              final goals = scope.goals;
+              final goalsSubtitle = goals.isLoading
+                  ? loc.translate('workspace_goals_loading')
+                  : loc.translate(
+                      'tools_goals_summary',
+                      params: {
+                        'tasks': goals.taskProgressPercent.toStringAsFixed(0),
+                        'focus': goals.focusProgressPercent.toStringAsFixed(0),
+                      },
+                    );
 
               final cards = [
                 _ToolCardData(
@@ -86,6 +97,13 @@ class ToolsScreen extends StatelessWidget {
                   title: loc.translate('tools_insights'),
                   subtitle: insightsSubtitle,
                   route: AppRoutes.insights,
+                ),
+                _ToolCardData(
+                  icon: IconlyBold.graph,
+                  title: loc.translate('workspace_goals'),
+                  subtitle: goalsSubtitle,
+                  route: AppRoutes.goals,
+                  highlight: !goals.isLoading && goals.taskProgress < 0.7,
                 ),
                 _ToolCardData(
                   icon: IconlyBold.document,

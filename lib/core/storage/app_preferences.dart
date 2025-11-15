@@ -21,6 +21,9 @@ class AppPreferences {
   static const _timeTrackerTaskKey = 'time_tracker_last_task';
   static const _timeTrackerHistoryKey = 'time_tracker_history';
   static const _searchHistoryKey = 'search_history';
+  static const _goalTasksKey = 'workspace_goal_tasks';
+  static const _goalRevenueKey = 'workspace_goal_revenue';
+  static const _goalFocusMinutesKey = 'workspace_goal_focus_minutes';
 
   static Future<AppPreferences> getInstance() async {
     final prefs = await SharedPreferences.getInstance();
@@ -148,4 +151,21 @@ class AppPreferences {
       await _prefs.setStringList(_searchHistoryKey, history);
     }
   }
+
+  int restoreMonthlyTaskGoal(int fallback) => _prefs.getInt(_goalTasksKey) ?? fallback;
+
+  Future<void> persistMonthlyTaskGoal(int value) => _prefs.setInt(_goalTasksKey, value);
+
+  double restoreMonthlyRevenueGoal(double fallback) => _prefs.getDouble(_goalRevenueKey) ?? fallback;
+
+  Future<void> persistMonthlyRevenueGoal(double value) => _prefs.setDouble(_goalRevenueKey, value);
+
+  Duration restoreWeeklyFocusGoal(Duration fallback) {
+    final minutes = _prefs.getInt(_goalFocusMinutesKey);
+    if (minutes == null) return fallback;
+    return Duration(minutes: minutes);
+  }
+
+  Future<void> persistWeeklyFocusGoal(Duration value) =>
+      _prefs.setInt(_goalFocusMinutesKey, value.inMinutes);
 }

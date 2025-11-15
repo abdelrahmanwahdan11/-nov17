@@ -12,6 +12,7 @@ import 'templates_controller.dart';
 import 'library_controller.dart';
 import 'finance_controller.dart';
 import 'insights_controller.dart';
+import 'goals_controller.dart';
 
 class WorkspaceScope extends InheritedWidget {
   const WorkspaceScope({
@@ -28,6 +29,7 @@ class WorkspaceScope extends InheritedWidget {
     required this.library,
     required this.finance,
     required this.insights,
+    required this.goals,
     required super.child,
   });
 
@@ -43,6 +45,7 @@ class WorkspaceScope extends InheritedWidget {
   final LibraryController library;
   final FinanceController finance;
   final InsightsController insights;
+  final GoalsController goals;
 
   static WorkspaceScope of(BuildContext context) {
     final scope = context.dependOnInheritedWidgetOfExactType<WorkspaceScope>();

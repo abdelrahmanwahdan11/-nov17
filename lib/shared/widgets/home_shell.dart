@@ -26,6 +26,7 @@ import '../controllers/templates_controller.dart';
 import '../controllers/library_controller.dart';
 import '../controllers/finance_controller.dart';
 import '../controllers/insights_controller.dart';
+import '../controllers/goals_controller.dart';
 import 'app_drawer.dart';
 
 class HomeShell extends StatefulWidget {
@@ -49,6 +50,7 @@ class _HomeShellState extends State<HomeShell> {
   late final LibraryController _libraryController;
   late final FinanceController _financeController;
   late final InsightsController _insightsController;
+  late final GoalsController _goalsController;
   int _index = 0;
   bool _drawerOpen = false;
 
@@ -73,6 +75,12 @@ class _HomeShellState extends State<HomeShell> {
       tasks: _tasksController,
       finance: _financeController,
     );
+    _goalsController = GoalsController(
+      app: widget.controller,
+      repository: _repository,
+      tasks: _tasksController,
+      finance: _financeController,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _projectsController.bootstrap();
       _tasksController.bootstrap();
@@ -82,6 +90,7 @@ class _HomeShellState extends State<HomeShell> {
       _templatesController.bootstrap();
       _libraryController.bootstrap();
       _financeController.bootstrap();
+      _goalsController.bootstrap();
     });
   }
 
@@ -106,6 +115,7 @@ class _HomeShellState extends State<HomeShell> {
     _libraryController.dispose();
     _financeController.dispose();
     _insightsController.dispose();
+    _goalsController.dispose();
     _compareController.dispose();
     super.dispose();
   }
@@ -185,6 +195,7 @@ class _HomeShellState extends State<HomeShell> {
       library: _libraryController,
       finance: _financeController,
       insights: _insightsController,
+      goals: _goalsController,
       child: Directionality(
         textDirection: widget.controller.locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
         child: Scaffold(

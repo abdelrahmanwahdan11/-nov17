@@ -18,6 +18,7 @@ class DashboardScreen extends StatelessWidget {
       scope.projects.refresh(),
       scope.tasks.refresh(),
       scope.catalog.refresh(),
+      scope.goals.refresh(),
     ]);
   }
 
@@ -30,7 +31,7 @@ class DashboardScreen extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () => _refresh(context),
       child: AnimatedBuilder(
-        animation: Listenable.merge([scope.projects, scope.tasks, scope.catalog]),
+        animation: Listenable.merge([scope.projects, scope.tasks, scope.catalog, scope.goals]),
         builder: (context, _) {
           final projects = scope.projects;
           final tasks = scope.tasks;
@@ -100,6 +101,8 @@ class DashboardScreen extends StatelessWidget {
                       _PaymentSummaryCard(),
                       const SizedBox(height: 24),
                       const _FocusSummaryCard(),
+                      const SizedBox(height: 24),
+                      const _GoalsPulseCard(),
                       const SizedBox(height: 24),
                       const _WorkspaceHealthCard(),
                       const SizedBox(height: 24),
@@ -360,6 +363,235 @@ class _FocusMetric extends StatelessWidget {
           Text(label, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 6),
           Text(value, style: Theme.of(context).textTheme.titleMedium),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalsPulseCard extends StatelessWidget {
+  const _GoalsPulseCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = WorkspaceScope.of(context);
+    final goals = scope.goals;
+    final loc = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    return AnimatedBuilder(
+      animation: goals,
+      builder: (context, _) {
+        final material = MaterialLocalizations.of(context);
+        final taskValue = loc.translate(
+          'workspace_goals_value_of_goal',
+          params: {
+            'value': goals.completedTasks.toString(),
+            'goal': goals.monthlyTaskGoal.toString(),
+          },
+        );
+        final revenueValue = loc.translate(
+          'workspace_goals_currency_value',
+          params: {
+            'value': _formatThousands(goals.revenueThisMonth.round()),
+            'goal': _formatThousands(goals.monthlyRevenueGoal.round()),
+          },
+        );
+        final focusHours = goals.focusThisWeek.inHours;
+        final focusMinutes = goals.focusThisWeek.inMinutes.remainder(60);
+        final focusValue = focusMinutes == 0
+            ? loc.translate('workspace_goals_focus_value_hours', params: {'hours': focusHours.toString()})
+            : loc.translate(
+                'workspace_goals_focus_value',
+                params: {
+                  'hours': focusHours.toString(),
+                  'minutes': focusMinutes.toString().padLeft(2, '0'),
+                },
+              );
+        final taskCaption = loc.translate(
+          'workspace_goals_progress_caption',
+          params: {'percent': goals.taskProgressPercent.toStringAsFixed(0)},
+        );
+        final revenueCaption = loc.translate(
+          'workspace_goals_progress_caption',
+          params: {'percent': goals.revenueProgressPercent.toStringAsFixed(0)},
+        );
+        final focusCaption = loc.translate(
+          'workspace_goals_progress_caption',
+          params: {'percent': goals.focusProgressPercent.toStringAsFixed(0)},
+        );
+        final focusTarget = loc.translate(
+          'workspace_goals_target_focus',
+          params: {'hours': goals.weeklyFocusGoal.inHours.toString()},
+        );
+        final taskTarget = loc.translate(
+          'workspace_goals_target_tasks',
+          params: {'count': goals.monthlyTaskGoal.toString()},
+        );
+        final revenueTarget = loc.translate(
+          'workspace_goals_target_revenue',
+          params: {'amount': _formatThousands(goals.monthlyRevenueGoal.round())},
+        );
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(loc.translate('workspace_goals'), style: theme.textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        Text(
+                          loc.translate('workspace_goals_subtitle'),
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.goals),
+                    icon: const Icon(Icons.tune),
+                    label: Text(loc.translate('workspace_goals_edit')),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _GoalMetric(
+                      label: loc.translate('workspace_goals_tasks_title'),
+                      value: taskValue,
+                      caption: taskCaption,
+                      target: taskTarget,
+                      progress: goals.taskProgress,
+                      loading: goals.isLoading,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _GoalMetric(
+                      label: loc.translate('workspace_goals_revenue_title'),
+                      value: revenueValue,
+                      caption: revenueCaption,
+                      target: revenueTarget,
+                      progress: goals.revenueProgress,
+                      loading: goals.isLoading,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _GoalMetric(
+                      label: loc.translate('workspace_goals_focus_title'),
+                      value: focusValue,
+                      caption: focusCaption,
+                      target: focusTarget,
+                      progress: goals.focusProgress,
+                      loading: goals.isLoading,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (goals.isLoading)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    loc.translate('workspace_goals_loading'),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                )
+              else ...[
+                const SizedBox(height: 4),
+                Text(
+                  material.formatFullDate(DateTime.now()),
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _formatThousands(num value) {
+    final digits = value.round().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      final index = digits.length - i;
+      buffer.write(digits[i]);
+      if (index > 1 && index % 3 == 1 && i != digits.length - 1) {
+        buffer.write(',');
+      }
+    }
+    return buffer.toString();
+  }
+}
+
+class _GoalMetric extends StatelessWidget {
+  const _GoalMetric({
+    required this.label,
+    required this.value,
+    required this.caption,
+    required this.target,
+    required this.progress,
+    required this.loading,
+  });
+
+  final String label;
+  final String value;
+  final String caption;
+  final String target;
+  final double progress;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            caption,
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            target,
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: LinearProgressIndicator(
+              value: loading ? null : progress.clamp(0, 1),
+              minHeight: 6,
+            ),
+          ),
         ],
       ),
     );

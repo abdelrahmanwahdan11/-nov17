@@ -21,5 +21,6 @@ class AppRoutes {
   static const compare = '/compare';
   static const search = '/search';
   static const settings = '/settings';
+  static const goals = '/settings/goals';
   static const notifications = '/notifications';
 }

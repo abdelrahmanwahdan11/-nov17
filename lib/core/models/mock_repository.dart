@@ -190,6 +190,33 @@ class MockRepository {
     return counts;
   }
 
+  int completedTasksForMonth(DateTime month) {
+    return _tasks
+        .where(
+          (task) =>
+              task.status.toLowerCase() == 'done' &&
+              task.dueDate.year == month.year &&
+              task.dueDate.month == month.month,
+        )
+        .length;
+  }
+
+  double revenueForMonth(DateTime month) {
+    final snapshot = _financeMonthly.firstWhere(
+      (item) => item.period.year == month.year && item.period.month == month.month,
+      orElse: () => FinanceSnapshot(
+        id: 'empty-${month.year}-${month.month}',
+        label: '',
+        period: month,
+        revenue: 0,
+        expenses: 0,
+        goal: 0,
+        trend: 0,
+      ),
+    );
+    return snapshot.revenue;
+  }
+
   Task? findTask(String id) {
     try {
       return _tasks.firstWhere((task) => task.id == id);

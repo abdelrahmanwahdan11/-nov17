@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:iconly/iconly.dart';
 
 import '../../core/localization/app_localizations.dart';
+import '../../core/routing/app_routes.dart';
 import '../../shared/controllers/app_controller.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -83,6 +85,13 @@ class SettingsScreen extends StatelessWidget {
           groupValue: controller.locale,
           onChanged: (locale) => controller.updateLocale(locale!),
           title: Text(loc.translate('language_ar')),
+        ),
+        const SizedBox(height: 24),
+        ListTile(
+          leading: const Icon(IconlyBold.graph),
+          title: Text(loc.translate('workspace_goals')),
+          subtitle: Text(loc.translate('settings_goals_subtitle')),
+          onTap: () => Navigator.pushNamed(context, AppRoutes.goals),
         ),
       ],
     );

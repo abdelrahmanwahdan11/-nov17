@@ -23,6 +23,9 @@ class AppController extends ChangeNotifier {
   String? lastTrackedTaskId;
   List<TrackedSession> _trackedSessions = const [];
   List<String> _searchHistory = const [];
+  int monthlyTaskGoal = 36;
+  double monthlyRevenueGoal = 24000;
+  Duration weeklyFocusGoal = const Duration(hours: 12);
 
   String get initialRoute {
     if (!onboardingSeen) {
@@ -83,6 +86,9 @@ class AppController extends ChangeNotifier {
     lastTrackedTaskId = _preferences.restoreTimeTrackerTask();
     _trackedSessions = _preferences.restoreTimeTrackerHistory();
     _searchHistory = List<String>.from(_preferences.restoreSearchHistory());
+    monthlyTaskGoal = _preferences.restoreMonthlyTaskGoal(monthlyTaskGoal);
+    monthlyRevenueGoal = _preferences.restoreMonthlyRevenueGoal(monthlyRevenueGoal);
+    weeklyFocusGoal = _preferences.restoreWeeklyFocusGoal(weeklyFocusGoal);
     notifyListeners();
   }
 
@@ -148,6 +154,26 @@ class AppController extends ChangeNotifier {
     lastTrackedDuration = Duration.zero;
     await _preferences.persistTimeTrackerHistory(_trackedSessions);
     await _preferences.persistTimeTrackerDuration(lastTrackedDuration);
+    notifyListeners();
+  }
+
+  Future<void> updateWorkspaceGoals({
+    int? taskGoal,
+    double? revenueGoal,
+    Duration? focusGoal,
+  }) async {
+    if (taskGoal != null) {
+      monthlyTaskGoal = taskGoal;
+      await _preferences.persistMonthlyTaskGoal(taskGoal);
+    }
+    if (revenueGoal != null) {
+      monthlyRevenueGoal = revenueGoal;
+      await _preferences.persistMonthlyRevenueGoal(revenueGoal);
+    }
+    if (focusGoal != null) {
+      weeklyFocusGoal = focusGoal;
+      await _preferences.persistWeeklyFocusGoal(focusGoal);
+    }
     notifyListeners();
   }
 
