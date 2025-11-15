@@ -1,0 +1,21 @@
+name: connecq_productivity_os
+description: ConnecQ Productivity OS - soft pastel productivity dashboard experience.
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  google_fonts: any
+  shared_preferences: any
+  iconly: any
+
+flutter:
+  uses-material-design: true
+  assets: []
