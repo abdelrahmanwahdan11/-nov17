@@ -14,6 +14,7 @@ import '../../features/notifications/notifications_screen.dart';
 import '../../features/onboarding/onboarding_story_screen.dart';
 import '../../features/projects/project_details_screen.dart';
 import '../../features/projects/projects_screen.dart';
+import '../../features/reports/reports_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/settings/goals_screen.dart';
@@ -84,6 +85,8 @@ class AppRouter {
         return _material(settings, const CompareScreen());
       case AppRoutes.search:
         return _material(settings, const SearchScreen());
+      case AppRoutes.reports:
+        return _material(settings, const ReportsScreen());
       case AppRoutes.settings:
         return _material(settings, SettingsScreen(controller: controller));
       case AppRoutes.goals:

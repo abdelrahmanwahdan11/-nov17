@@ -36,6 +36,7 @@ class AppDrawer extends StatelessWidget {
       IconlyBold.activity,
       IconlyBold.search,
       IconlyBold.notification,
+      IconlyBold.document,
       IconlyBold.profile,
     ];
 

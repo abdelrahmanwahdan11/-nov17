@@ -23,6 +23,7 @@ class AppRoutes {
   static const catalog = '/catalog';
   static const compare = '/compare';
   static const search = '/search';
+  static const reports = '/reports';
   static const settings = '/settings';
   static const goals = '/settings/goals';
   static const notifications = '/notifications';

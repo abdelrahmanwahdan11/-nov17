@@ -106,6 +106,17 @@ class ToolsScreen extends StatelessWidget {
                         'time': _formatRelativeCheckIn(latestTeamCheckIn.createdAt, loc, materialLoc),
                       },
                     );
+              final reports = scope.reports;
+              final snapshotCount = reports.snapshotCount;
+              final reportsSubtitle = snapshotCount == 0
+                  ? loc.translate('tools_reports_summary_zero')
+                  : snapshotCount == 1
+                      ? loc.translate('tools_reports_summary_one')
+                      : loc.translate(
+                          'tools_reports_summary_many',
+                          params: {'count': snapshotCount.toString()},
+                        );
+              final reportsHighlight = (reports.latest?.atRiskProjects ?? 0) > 0;
 
               final cards = [
                 _ToolCardData(
@@ -147,6 +158,13 @@ class ToolsScreen extends StatelessWidget {
                   subtitle: goalsSubtitle,
                   route: AppRoutes.goals,
                   highlight: !goals.isLoading && goals.taskProgress < 0.7,
+                ),
+                _ToolCardData(
+                  icon: IconlyBold.paper,
+                  title: loc.translate('tools_reports'),
+                  subtitle: reportsSubtitle,
+                  route: AppRoutes.reports,
+                  highlight: reportsHighlight,
                 ),
                 _ToolCardData(
                   icon: IconlyBold.document,
