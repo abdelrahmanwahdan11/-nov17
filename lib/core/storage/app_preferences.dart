@@ -1,0 +1,171 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/tracked_session.dart';
+
+class AppPreferences {
+  AppPreferences(this._prefs);
+
+  final SharedPreferences _prefs;
+
+  static const _onboardingSeenKey = 'onboarding_seen';
+  static const _isLoggedInKey = 'is_logged_in';
+  static const _themeModeKey = 'theme_mode';
+  static const _primaryColorKey = 'primary_color_hex';
+  static const _localeKey = 'app_language';
+  static const _userNameKey = 'user_name';
+  static const _userEmailKey = 'user_email';
+  static const _timeTrackerSecondsKey = 'time_tracker_last_seconds';
+  static const _timeTrackerTaskKey = 'time_tracker_last_task';
+  static const _timeTrackerHistoryKey = 'time_tracker_history';
+  static const _searchHistoryKey = 'search_history';
+  static const _goalTasksKey = 'workspace_goal_tasks';
+  static const _goalRevenueKey = 'workspace_goal_revenue';
+  static const _goalFocusMinutesKey = 'workspace_goal_focus_minutes';
+
+  static Future<AppPreferences> getInstance() async {
+    final prefs = await SharedPreferences.getInstance();
+    return AppPreferences(prefs);
+  }
+
+  bool restoreOnboardingSeen() => _prefs.getBool(_onboardingSeenKey) ?? false;
+
+  Future<void> persistOnboardingSeen(bool value) => _prefs.setBool(_onboardingSeenKey, value);
+
+  bool restoreIsLoggedIn() => _prefs.getBool(_isLoggedInKey) ?? false;
+
+  Future<void> persistIsLoggedIn(bool value) => _prefs.setBool(_isLoggedInKey, value);
+
+  ThemeMode restoreThemeMode() {
+    final value = _prefs.getString(_themeModeKey);
+    switch (value) {
+      case 'dark':
+        return ThemeMode.dark;
+      case 'system':
+        return ThemeMode.system;
+      default:
+        return ThemeMode.light;
+    }
+  }
+
+  Future<void> persistThemeMode(ThemeMode mode) => _prefs.setString(
+        _themeModeKey,
+        switch (mode) {
+          ThemeMode.dark => 'dark',
+          ThemeMode.system => 'system',
+          _ => 'light',
+        },
+      );
+
+  Color restorePrimaryColor(Color fallback) {
+    final value = _prefs.getString(_primaryColorKey);
+    if (value == null) {
+      return fallback;
+    }
+    return Color(int.parse(value, radix: 16));
+  }
+
+  Future<void> persistPrimaryColor(Color color) => _prefs.setString(
+        _primaryColorKey,
+        color.value.toRadixString(16),
+      );
+
+  Locale restoreLocale(Locale fallback) {
+    final value = _prefs.getString(_localeKey);
+    if (value == null) {
+      return fallback;
+    }
+    return Locale(value);
+  }
+
+  Future<void> persistLocale(Locale locale) => _prefs.setString(
+        _localeKey,
+        locale.languageCode,
+      );
+
+  String? restoreUserName() => _prefs.getString(_userNameKey);
+
+  Future<void> persistUserName(String? name) async {
+    if (name == null) {
+      await _prefs.remove(_userNameKey);
+    } else {
+      await _prefs.setString(_userNameKey, name);
+    }
+  }
+
+  String? restoreUserEmail() => _prefs.getString(_userEmailKey);
+
+  Future<void> persistUserEmail(String? email) async {
+    if (email == null) {
+      await _prefs.remove(_userEmailKey);
+    } else {
+      await _prefs.setString(_userEmailKey, email);
+    }
+  }
+
+  Duration restoreTimeTrackerDuration() {
+    final seconds = _prefs.getInt(_timeTrackerSecondsKey) ?? 0;
+    return Duration(seconds: seconds);
+  }
+
+  Future<void> persistTimeTrackerDuration(Duration duration) =>
+      _prefs.setInt(_timeTrackerSecondsKey, duration.inSeconds);
+
+  String? restoreTimeTrackerTask() => _prefs.getString(_timeTrackerTaskKey);
+
+  Future<void> persistTimeTrackerTask(String? taskId) async {
+    if (taskId == null || taskId.isEmpty) {
+      await _prefs.remove(_timeTrackerTaskKey);
+    } else {
+      await _prefs.setString(_timeTrackerTaskKey, taskId);
+    }
+  }
+
+  List<TrackedSession> restoreTimeTrackerHistory() {
+    final values = _prefs.getStringList(_timeTrackerHistoryKey);
+    if (values == null) {
+      return const [];
+    }
+    return values.map(TrackedSession.fromEncoded).toList(growable: false);
+  }
+
+  Future<void> persistTimeTrackerHistory(List<TrackedSession> sessions) async {
+    final encoded = sessions.map((session) => session.encode()).toList(growable: false);
+    await _prefs.setStringList(_timeTrackerHistoryKey, encoded);
+  }
+
+  List<String> restoreSearchHistory() {
+    final values = _prefs.getStringList(_searchHistoryKey);
+    if (values == null) {
+      return const [];
+    }
+    return List.unmodifiable(values);
+  }
+
+  Future<void> persistSearchHistory(List<String> history) async {
+    if (history.isEmpty) {
+      await _prefs.remove(_searchHistoryKey);
+    } else {
+      await _prefs.setStringList(_searchHistoryKey, history);
+    }
+  }
+
+  int restoreMonthlyTaskGoal(int fallback) => _prefs.getInt(_goalTasksKey) ?? fallback;
+
+  Future<void> persistMonthlyTaskGoal(int value) => _prefs.setInt(_goalTasksKey, value);
+
+  double restoreMonthlyRevenueGoal(double fallback) => _prefs.getDouble(_goalRevenueKey) ?? fallback;
+
+  Future<void> persistMonthlyRevenueGoal(double value) => _prefs.setDouble(_goalRevenueKey, value);
+
+  Duration restoreWeeklyFocusGoal(Duration fallback) {
+    final minutes = _prefs.getInt(_goalFocusMinutesKey);
+    if (minutes == null) return fallback;
+    return Duration(minutes: minutes);
+  }
+
+  Future<void> persistWeeklyFocusGoal(Duration value) =>
+      _prefs.setInt(_goalFocusMinutesKey, value.inMinutes);
+}
